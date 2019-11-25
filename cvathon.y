@@ -18,7 +18,7 @@ int exp1 = 0;
 	struct Exp *pExp;
 };
 
-%type  <pExp> line exp declare sub_declare id if_line
+%type  <pExp> line exp declare sub_declare id if_line condition while_line control
 
 %token <type_integer> INTEGER
 %token <type_id> ID
@@ -46,20 +46,26 @@ input:
 	 | input line
 	 ;
 line : '\n'    { ;}
-	 | declare '\n' {display($1,nestCodeBlock*blanks);}
-	 | exp '\n' {display($1,nestCodeBlock*blanks);}
-	 | BLP '\n' {displayMessage(0,(nestCodeBlock+1)*blanks);nestCodeBlock+=2;}
-	 | BRP '\n' {nestCodeBlock-=2;}
-	 | if_line '\n'	{display($1,nestCodeBlock*blanks);}
-	 | ELSE '\n' {displayMessage(1,nestCodeBlock*blanks);}
+	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | exp '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);nestCodeBlock+=2;}}
+	 | BRP '\n' {if(exp1) {nestCodeBlock-=2;}}
+	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | while_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | ELSE '\n' {if(exp1) {displayMessage(1,nestCodeBlock*blanks);}}
+	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | error '\n' { printf("line error!\n");}
 	 ;
-if_line : IF LP if_line RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=IF_NODE;$$->ptr.pExp1=$3;}
-		| exp EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
-		| exp GREATER exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
-		| exp LESS exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
-		| exp GREATER_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
-		| exp LESS_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
+
+control : CONTINUE  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONTINUE_NODE;}
+		| BREAK 	{$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=BREAK_NODE;}
+while_line : WHILE LP condition RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=WHILE_NODE;$$->ptr.pExp1=$3;}
+if_line : IF LP condition RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=IF_NODE;$$->ptr.pExp1=$3;}
+condition: exp EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
+		 | exp GREATER exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
+		 | exp LESS exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
+		 | exp GREATER_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
+		 | exp LESS_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 declare	: INT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INT_NODE;$$->ptr.pExp1=$2;}
 		| CHAR sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CHAR_NODE;$$->ptr.pExp1=$2;}
 		| FLOAT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FLOAT_NODE;$$->ptr.pExp1=$2;}

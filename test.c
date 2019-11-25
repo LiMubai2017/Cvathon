@@ -10,3 +10,12 @@ else
 {
 	b=b+1
 }
+while (a<10)
+{
+	a++
+	if(a>8)
+	{
+		break
+	}
+	continue
+}

@@ -26,106 +26,117 @@ void display(PEXP T,int indent)
 	
 	switch (T->kind) {
 		case IF_NODE:
-				printf("%*cIF语句:\n",indent,' ');
-				printf("%*c判断条件:\n",indent+blanks,' ');
-				display(T->ptr.pExp1,indent+blanks*2);
-				break;
+			printf("%*cIF语句:\n",indent,' ');
+			printf("%*c判断条件:\n",indent+blanks,' ');
+			display(T->ptr.pExp1,indent+blanks*2);
+			break;
+		case WHILE_NODE:
+			printf("%*cWHILE语句:\n",indent,' ');
+			printf("%*c判断条件:\n",indent+blanks,' ');
+			display(T->ptr.pExp1,indent+blanks*2);
+			break;
 		case GREATER_NODE:
-				printf("%*cGREATER:\n",indent,' ');
-				display(T->ptr.pExp1,indent+blanks);
-				display(T->ptr.pExp2,indent+blanks);
-				break;
+			printf("%*cGREATER:\n",indent,' ');
+			display(T->ptr.pExp1,indent+blanks);
+			display(T->ptr.pExp2,indent+blanks);
+			break;
 		case LESS_NODE:
-				printf("%*cLESS:\n",indent,' ');
-				display(T->ptr.pExp1,indent+blanks);
-				display(T->ptr.pExp2,indent+blanks);
-				break;
+			printf("%*cLESS:\n",indent,' ');
+			display(T->ptr.pExp1,indent+blanks);
+			display(T->ptr.pExp2,indent+blanks);
+			break;
 		case EQUAL_NODE:
-				printf("%*cEQUAL:\n",indent,' ');
-				display(T->ptr.pExp1,indent+blanks);
-				display(T->ptr.pExp2,indent+blanks);
-				break;
+			printf("%*cEQUAL:\n",indent,' ');
+			display(T->ptr.pExp1,indent+blanks);
+			display(T->ptr.pExp2,indent+blanks);
+			break;
 		case GREATER_EQUAL_NODE:
-				printf("%*cGREATER_EQUAL:\n",indent,' ');
-				display(T->ptr.pExp1,indent+blanks);
-				display(T->ptr.pExp2,indent+blanks);
-				break;
+			printf("%*cGREATER_EQUAL:\n",indent,' ');
+			display(T->ptr.pExp1,indent+blanks);
+			display(T->ptr.pExp2,indent+blanks);
+			break;
 		case LESS_EQUAL_NODE:
-				printf("%*cLESS_EQUAL:\n",indent,' ');
-				display(T->ptr.pExp1,indent+blanks);
-				display(T->ptr.pExp2,indent+blanks);
-				break;
+			printf("%*cLESS_EQUAL:\n",indent,' ');
+			display(T->ptr.pExp1,indent+blanks);
+			display(T->ptr.pExp2,indent+blanks);
+			break;
 		case CHAR_NODE:
-				if (indent == 0) {
-					printf("%*c外部变量定义:\n",indent,' ');
-				} else {
-					printf("%*c内部变量定义:\n",indent,' ');
-				}
-				printf("%*c类型： %s\n",indent+blanks,' ',"CHAR");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			if (indent == 0) {
+				printf("%*c外部变量定义:\n",indent,' ');
+			} else {
+				printf("%*c内部变量定义:\n",indent,' ');
+			}
+			printf("%*c类型： %s\n",indent+blanks,' ',"CHAR");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
 		case FLOAT_NODE:
-				if (indent == 0) {
-					printf("%*c外部变量定义:\n",indent,' ');
-				} else {
-					printf("%*c内部变量定义:\n",indent,' ');
-				}
-				printf("%*c类型： %s\n",indent+blanks,' ',"FLOAT");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			if (indent == 0) {
+				printf("%*c外部变量定义:\n",indent,' ');
+			} else {
+				printf("%*c内部变量定义:\n",indent,' ');
+			}
+			printf("%*c类型： %s\n",indent+blanks,' ',"FLOAT");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
 		case INT_NODE:
-				if (indent == 0) {
-					printf("%*c外部变量定义:\n",indent,' ');
-				} else {
-					printf("%*c内部变量定义:\n",indent,' ');
-				}
-				printf("%*c类型： %s\n",indent+blanks,' ',"INT");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			if (indent == 0) {
+				printf("%*c外部变量定义:\n",indent,' ');
+			} else {
+				printf("%*c内部变量定义:\n",indent,' ');
+			}
+			printf("%*c类型： %s\n",indent+blanks,' ',"INT");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
 		case DECLARE_SUB_NODE:
-				display(T->ptr.pExp1,indent);
-				if(T->ptr.pExp2 != NULL)
-					display(T->ptr.pExp2,indent);
-				break;
+			display(T->ptr.pExp1,indent);
+			if(T->ptr.pExp2 != NULL)
+				display(T->ptr.pExp2,indent);
+			break;
 		case ID_NODE:
-				printf("%*cID： %s\n",indent,' ',T->type_id);
-				break;
+			printf("%*cID： %s\n",indent,' ',T->type_id);
+			break;
 		case INTEGER_NODE:
-				printf("%*cINT： %d\n",indent,' ',T->type_integer);
-				break;
+			printf("%*cINT： %d\n",indent,' ',T->type_integer);
+			break;
 		case UMINUS_NODE:
-				printf("%*c%s\n",indent,' ',"UMINUS");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			printf("%*c%s\n",indent,' ',"UMINUS");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
 		case PLUS_NODE:
 		case MINUS_NODE:
 		case STAR_NODE:
 		case DIV_NODE:
-				printf("%*c%s\n",indent,' ',T->kind==PLUS_NODE?"PLUS":(T->kind==MINUS_NODE?"MINUS":(T->kind==STAR_NODE?"STAR":"DIV")));
-				display(T->ptr.pExp1,indent+blanks);
-				display(T->ptr.pExp2,indent+blanks);
-				break;
+			printf("%*c%s\n",indent,' ',T->kind==PLUS_NODE?"PLUS":(T->kind==MINUS_NODE?"MINUS":(T->kind==STAR_NODE?"STAR":"DIV")));
+			display(T->ptr.pExp1,indent+blanks);
+			display(T->ptr.pExp2,indent+blanks);
+			break;
 		case ASSIGN_NODE:
-				printf("%*c%s\n",indent,' ',"ASSIGNOP");
-				display(T->ptr.pExp1,indent+blanks);
-				display(T->ptr.pExp2,indent+blanks);
-				break;
+			printf("%*c%s\n",indent,' ',"ASSIGNOP");
+			display(T->ptr.pExp1,indent+blanks);
+			display(T->ptr.pExp2,indent+blanks);
+			break;
 		case INC_PREFIX_NODE:
-				printf("%*c%s\n",indent,' ',"INC_PREFIX");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			printf("%*c%s\n",indent,' ',"INC_PREFIX");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
 		case INC_SUFFIX_NODE:
-				printf("%*c%s\n",indent,' ',"INC_SUFFIX");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			printf("%*c%s\n",indent,' ',"INC_SUFFIX");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
 		case DEC_PREFIX_NODE:
-				printf("%*c%s\n",indent,' ',"DEC_PREFIX");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			printf("%*c%s\n",indent,' ',"DEC_PREFIX");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
 		case DEC_SUFFIX_NODE:
-				printf("%*c%s\n",indent,' ',"DEC_SUFFIX");
-				display(T->ptr.pExp1,indent+blanks);
-				break;
+			printf("%*c%s\n",indent,' ',"DEC_SUFFIX");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
+		case CONTINUE_NODE:
+			printf("%*c%s\n",indent,' ',"CONTINUE");
+			break;
+		case BREAK_NODE:
+			printf("%*c%s\n",indent,' ',"BREAK");
+			break;
 	}
 
 }
