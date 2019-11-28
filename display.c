@@ -3,7 +3,7 @@
 #include "string.h"
 char WORD_KIND[26][10] = {"LP","RP","BLP","BRP","PLUS","MINUS","STAR","DIV","INTEGER","ID",
 				 "ASSIGNOP","INT","FLOAT","CHAR","GREATER","LESS","EQUAL","GREATER_EQUAL",
-				 "LESS_EQUAL","IF","ELSE","WHILE","CONTINUE","BREAK","INC","DEC"};
+				 "LESS_EQUAL","IF","ELSE","WHILE","CONTINUE","BREAK","INC","DEC","INT[]","FLOAT[]","CHAR[]"};
 int blanks=5;
 enum msg{NEST_CODE_BLOCK,ELSE_LINE,ARRAY};
 void displayMessage(int index, int indent)
@@ -85,6 +85,33 @@ void display(PEXP T,int indent)
 				printf("%*c内部变量定义:\n",indent,' ');
 			}
 			printf("%*c类型： %s\n",indent+blanks,' ',"INT");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
+		case CHARS_NODE:
+			if (indent == 0) {
+				printf("%*c外部变量定义:\n",indent,' ');
+			} else {
+				printf("%*c内部变量定义:\n",indent,' ');
+			}
+			printf("%*c类型： %s\n",indent+blanks,' ',"CHAR数组");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
+		case FLOATS_NODE:
+			if (indent == 0) {
+				printf("%*c外部变量定义:\n",indent,' ');
+			} else {
+				printf("%*c内部变量定义:\n",indent,' ');
+			}
+			printf("%*c类型： %s\n",indent+blanks,' ',"FLOAT数组");
+			display(T->ptr.pExp1,indent+blanks);
+			break;
+		case INTS_NODE:
+			if (indent == 0) {
+				printf("%*c外部变量定义:\n",indent,' ');
+			} else {
+				printf("%*c内部变量定义:\n",indent,' ');
+			}
+			printf("%*c类型： %s\n",indent+blanks,' ',"INT数组");
 			display(T->ptr.pExp1,indent+blanks);
 			break;
 		case DECLARE_SUB_NODE:

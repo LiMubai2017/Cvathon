@@ -17,6 +17,9 @@ id   [A-Za-z][A-Za-z0-9]*
 integer    [0-9]+
 %%
 {integer}      {addWord(INTEGER_ARRAY,yytext);yylval.type_integer=atoi(yytext); return INTEGER;}
+"int[]"			{addWord(INTS_ARRAY,yytext);return INTS;}
+"char[]"		{addWord(CHARS_ARRAY,yytext);return CHARS;}
+"float[]"		{addWord(FLOATS_ARRAY,yytext);return FLOATS;}
 int			{addWord(INT_ARRAY,yytext);return INT;}
 char		{addWord(CHAR_ARRAY,yytext);return CHAR;}
 float		{addWord(FLOAT_ARRAY,yytext);return FLOAT;}
@@ -44,8 +47,8 @@ continue	{addWord(CONTINUE_ARRAY,yytext);return CONTINUE;}
 [;]        {return yytext[0];}   
 [ \t]      {;}   
 [\n]       {return yytext[0];}   
-[>]		   {addWord(INT_ARRAY,yytext);return GREATER;}
-[<]		   {addWord(INT_ARRAY,yytext);return LESS;}
+[>]		   {addWord(GREATER_ARRAY,yytext);return GREATER;}
+[<]		   {addWord(LESS_ARRAY,yytext);return LESS;}
 .          {printf("error in line %d\n",yylineno);}
 <<EOF>>	   {if(exp1) {displayMessage(2,0);displayWordsArray(array);}yyterminate();}
 %%

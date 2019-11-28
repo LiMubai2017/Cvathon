@@ -1,5 +1,6 @@
 int a,b
 float c,d
+int[] e,f,g
 a=1*2+3*4+5*6
 a=b*2+3/c
 if (a>1)

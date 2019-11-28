@@ -31,6 +31,7 @@ int exp1 = 0;
 %token INC DEC
 
 %right INT CHAR FLOAT
+%right INTS CHARS FLOATS
 %right IF ELSE WHILE CONTINUE BREAK
 %left EQUAL GREATER_EQUAL LESS_EQUAL GREATER LESS
 %left ASSIGNOP
@@ -66,7 +67,10 @@ condition: exp EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=EQUAL_NO
 		 | exp LESS exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp GREATER_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp LESS_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
-declare	: INT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INT_NODE;$$->ptr.pExp1=$2;}
+declare	: INTS sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INTS_NODE;$$->ptr.pExp1=$2;}
+		| CHARS sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CHARS_NODE;$$->ptr.pExp1=$2;}
+		| FLOATS sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FLOATS_NODE;$$->ptr.pExp1=$2;}
+		| INT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INT_NODE;$$->ptr.pExp1=$2;}
 		| CHAR sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CHAR_NODE;$$->ptr.pExp1=$2;}
 		| FLOAT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FLOAT_NODE;$$->ptr.pExp1=$2;}
 sub_declare	: id ',' sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
