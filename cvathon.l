@@ -17,15 +17,13 @@ id   [A-Za-z][A-Za-z0-9]*
 integer    [0-9]+
 %%
 {integer}      {addWord(INTEGER_ARRAY,yytext);yylval.type_integer=atoi(yytext); return INTEGER;}
-"int[]"			{addWord(INTS_ARRAY,yytext);return INTS;}
-"char[]"		{addWord(CHARS_ARRAY,yytext);return CHARS;}
-"float[]"		{addWord(FLOATS_ARRAY,yytext);return FLOATS;}
 int			{addWord(INT_ARRAY,yytext);return INT;}
 char		{addWord(CHAR_ARRAY,yytext);return CHAR;}
 float		{addWord(FLOAT_ARRAY,yytext);return FLOAT;}
 if			{addWord(IF_ARRAY,yytext);return IF;}
 else		{addWord(ELSE_ARRAY,yytext);return ELSE;}
 while		{addWord(WHILE_ARRAY,yytext);return WHILE;}
+"for"		{addWord(FOR_ARRAY,yytext);return FOR;}
 break		{addWord(BREAK_ARRAY,yytext);return BREAK;}
 continue	{addWord(CONTINUE_ARRAY,yytext);return CONTINUE;}
 {id}       {addWord(ID_ARRAY,yytext);strcpy(yylval.type_id,  yytext); return ID;}
@@ -43,6 +41,8 @@ continue	{addWord(CONTINUE_ARRAY,yytext);return CONTINUE;}
 [)]        {addWord(RP_ARRAY,yytext);return RP;}
 [{]	   	   {addWord(BLP_ARRAY,yytext);return BLP;}
 [}]	       {addWord(BRP_ARRAY,yytext);return BRP;}
+[\[]	   {addWord(MLP_ARRAY,yytext);return MLP;}
+[\]]	   {addWord(MRP_ARRAY,yytext);return MRP;}
 [,]        {return yytext[0];}  
 [;]        {return yytext[0];}   
 [ \t]      {;}   

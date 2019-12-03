@@ -18,28 +18,25 @@ int exp1 = 0;
 	struct Exp *pExp;
 };
 
-%type  <pExp> line exp declare sub_declare id if_line condition while_line control
+%type  <pExp> line exp exp_unary declare sub_declare id if_line condition while_line control id_array assign for_line function function_fire
 
 %token <type_integer> INTEGER
 %token <type_id> ID
 
-%token LP RP BLP BRP  
+%token LP RP BLP BRP MLP MRP 
 %token PLUS MINUS STAR DIV ASSIGNOP
 %token INT FLOAT CHAR
 %token GREATER LESS EQUAL GREATER_EQUAL LESS_EQUAL
-%token IF ELSE WHILE CONTINUE BREAK
+%token IF ELSE WHILE CONTINUE BREAK FOR
 %token INC DEC
 
 %right INT CHAR FLOAT
-%right INTS CHARS FLOATS
 %right IF ELSE WHILE CONTINUE BREAK
 %left EQUAL GREATER_EQUAL LESS_EQUAL GREATER LESS
 %left ASSIGNOP
 %left PLUS MINUS
 %left STAR DIV
 %right UMINUS
-%right INC_PREFIX DEC_PREFIX
-%left INC_SUFFIX DEC_SUFFIX 
 
 
 %%
@@ -47,51 +44,72 @@ input:
 	 | input line
 	 ;
 line : '\n'    { ;}
+	 | function '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | exp '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);nestCodeBlock+=2;}}
 	 | BRP '\n' {if(exp1) {nestCodeBlock-=2;}}
 	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | while_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | for_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | ELSE '\n' {if(exp1) {displayMessage(1,nestCodeBlock*blanks);}}
 	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | error '\n' { printf("line error!\n");}
 	 ;
 
+function : INT ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=NULL;}
+		 | CHAR ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=NULL;}
+		 | FLOAT ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=NULL;}
+		 | INT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=$4;}
+		 | CHAR ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=$4;}
+		 | FLOAT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=$4;}
+function_fire : ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.type_id,$1);}
 control : CONTINUE  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONTINUE_NODE;}
 		| BREAK 	{$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=BREAK_NODE;}
 while_line : WHILE LP condition RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=WHILE_NODE;$$->ptr.pExp1=$3;}
+for_line: FOR LP assign ';' condition ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=$3;$$->for_exp.p2=$5;$$->for_exp.p3=$7;}
+		| FOR LP ';' condition ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=NULL;$$->for_exp.p2=$4;$$->for_exp.p3=$6;}
+		| FOR LP assign ';' condition ';'  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=$3;$$->for_exp.p2=$5;$$->for_exp.p3=NULL;}
+		| FOR LP  ';' condition ';'  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=NULL;$$->for_exp.p2=$4;$$->for_exp.p3=NULL;}
 if_line : IF LP condition RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=IF_NODE;$$->ptr.pExp1=$3;}
 condition: exp EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp GREATER exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp LESS exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp GREATER_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp LESS_EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
-declare	: INTS sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INTS_NODE;$$->ptr.pExp1=$2;}
-		| CHARS sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CHARS_NODE;$$->ptr.pExp1=$2;}
-		| FLOATS sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FLOATS_NODE;$$->ptr.pExp1=$2;}
-		| INT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INT_NODE;$$->ptr.pExp1=$2;}
+declare	: INT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INT_NODE;$$->ptr.pExp1=$2;}
 		| CHAR sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CHAR_NODE;$$->ptr.pExp1=$2;}
 		| FLOAT sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FLOAT_NODE;$$->ptr.pExp1=$2;}
 sub_declare	: id ',' sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 			| id {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE; $$->ptr.pExp1=$1;$$->ptr.pExp2=NULL;}
-exp	 : id ASSIGNOP exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ASSIGN_NODE; $$->ptr.pExp1=$1; $$->ptr.pExp2=$3;}
+			| id_array ',' sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
+			| id_array {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE; $$->ptr.pExp1=$1;$$->ptr.pExp2=NULL;}
+exp	 : assign {$$=$1;}
+	 | exp_unary {$$=$1;}
 	 | INTEGER {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INTEGER_NODE;$$->type_integer=$1;}
 	 | id {$$=$1;}
 	 | exp PLUS exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=PLUS_NODE;  $$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 	 | exp STAR exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=STAR_NODE;  $$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 	 | exp MINUS exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=MINUS_NODE;  $$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 	 | exp DIV exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DIV_NODE;  $$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
-exp	 : LP exp RP   {$$=$2;//(PEXP)malloc(sizeof(struct Exp)); $$->kind=LPRP_NODE;  $$->ptr.pExp1=$2;
-		       }
-     | MINUS exp   %prec UMINUS  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=UMINUS_NODE;  $$->ptr.pExp1=$2;}  
-	 | id INC %prec INC_SUFFIX {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INC_SUFFIX_NODE;  $$->ptr.pExp1=$1;}
-	 | id DEC %prec DEC_SUFFIX {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DEC_SUFFIX_NODE;  $$->ptr.pExp1=$1;}
-	 | INC id %prec INC_PREFIX {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INC_PREFIX_NODE;  $$->ptr.pExp1=$2;}
-	 | DEC id %prec DEC_PREFIX {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DEC_PREFIX_NODE;  $$->ptr.pExp1=$2;}
-	 | error  RP {printf("cha )\n");}
-id	: ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_NODE; strcpy($$->type_id,$1);}
-	;
+	 | LP exp RP   {$$=$2;}
+assign : id ASSIGNOP exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ASSIGN_NODE; $$->ptr.pExp1=$1; $$->ptr.pExp2=$3;} 
+exp_unary : MINUS exp   %prec UMINUS  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=UMINUS_NODE;  $$->ptr.pExp1=$2;}  
+		  | INC id %prec UMINUS {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INC_PREFIX_NODE;  $$->ptr.pExp1=$2;}
+		  | DEC id %prec UMINUS {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DEC_PREFIX_NODE;  $$->ptr.pExp1=$2;}
+		  | id INC %prec UMINUS {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INC_SUFFIX_NODE;  $$->ptr.pExp1=$1;}
+		  | id DEC %prec UMINUS {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DEC_SUFFIX_NODE;  $$->ptr.pExp1=$1;}
+id	: ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_NODE; strcpy($$->id.type_id,$1);}
+id_array : ID MLP INTEGER MRP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_ARRAY_NODE; strcpy($$->id.type_id,$1);
+								$$->id.dimension=1;$$->id.index1=$3;}
+		 | ID MLP INTEGER MRP MLP INTEGER MRP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_ARRAY_NODE; 
+									strcpy($$->id.type_id,$1);$$->id.dimension=2;$$->id.index1=$3;$$->id.index2=$6;}
+		 | ID MLP INTEGER MRP MLP INTEGER MRP MLP INTEGER MRP
+									{$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_ARRAY_NODE; 
+									strcpy($$->id.type_id,$1);$$->id.dimension=2;$$->id.index1=$3;$$->id.index2=$6;$$->id.index3=$9;}
+	
 %%
 
 int main(int argc, char *argv[]){

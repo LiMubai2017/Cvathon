@@ -1,22 +1,39 @@
-int a,b
-float c,d
-int[] e,f,g
-a=1*2+3*4+5*6
-a=b*2+3/c
-if (a>1)
+char test()
 {
+	int a
 	a++
 }
-else
+
+int main(int a)
 {
-	b=b+1
-}
-while (a<10)
-{
+	int a,b[10],e[2][4]
+	float c,d
+	
+	test()
+	
+	a=1*2+3*4+5*6
+	a=b*2+3/c
+	++a
 	a++
-	if(a>8)
+	if (a>1)
 	{
-		break
+		a++
 	}
-	continue
+	else
+	{
+		b=b+1
+	}
+	for(a=1;a<=10;a++)
+	{
+		b++
+	}
+	while (a<10)
+	{
+		a++
+		if(a>8)
+		{
+			break
+		}
+		continue
+	}
 }

@@ -1,9 +1,9 @@
 #include "stdio.h"
 #include "Node.h"
 #include "string.h"
-char WORD_KIND[26][10] = {"LP","RP","BLP","BRP","PLUS","MINUS","STAR","DIV","INTEGER","ID",
+char WORD_KIND[29][10] = {"LP","RP","BLP","BRP","PLUS","MINUS","STAR","DIV","INTEGER","ID",
 				 "ASSIGNOP","INT","FLOAT","CHAR","GREATER","LESS","EQUAL","GREATER_EQUAL",
-				 "LESS_EQUAL","IF","ELSE","WHILE","CONTINUE","BREAK","INC","DEC","INT[]","FLOAT[]","CHAR[]"};
+				 "LESS_EQUAL","IF","ELSE","WHILE","CONTINUE","BREAK","INC","DEC","[","]","for"};
 int blanks=5;
 enum msg{NEST_CODE_BLOCK,ELSE_LINE,ARRAY};
 void displayMessage(int index, int indent)
@@ -34,6 +34,15 @@ void display(PEXP T,int indent)
 			printf("%*cWHILE语句:\n",indent,' ');
 			printf("%*c判断条件:\n",indent+blanks,' ');
 			display(T->ptr.pExp1,indent+blanks*2);
+			break;
+		case FOR_NODE:
+			printf("%*cFOR语句:\n",indent,' ');
+			printf("%*c初始语句:\n",indent+blanks,' ');
+			if(T->for_exp.p1!=NULL) display(T->for_exp.p1,indent+blanks*2);
+			printf("%*c循环判断条件:\n",indent+blanks,' ');
+			if(T->for_exp.p2!=NULL) display(T->for_exp.p2,indent+blanks*2);
+			printf("%*c后执行语句:\n",indent+blanks,' ');
+			if(T->for_exp.p3!=NULL) display(T->for_exp.p3,indent+blanks*2);
 			break;
 		case GREATER_NODE:
 			printf("%*cGREATER:\n",indent,' ');
@@ -87,40 +96,27 @@ void display(PEXP T,int indent)
 			printf("%*c类型： %s\n",indent+blanks,' ',"INT");
 			display(T->ptr.pExp1,indent+blanks);
 			break;
-		case CHARS_NODE:
-			if (indent == 0) {
-				printf("%*c外部变量定义:\n",indent,' ');
-			} else {
-				printf("%*c内部变量定义:\n",indent,' ');
-			}
-			printf("%*c类型： %s\n",indent+blanks,' ',"CHAR数组");
-			display(T->ptr.pExp1,indent+blanks);
-			break;
-		case FLOATS_NODE:
-			if (indent == 0) {
-				printf("%*c外部变量定义:\n",indent,' ');
-			} else {
-				printf("%*c内部变量定义:\n",indent,' ');
-			}
-			printf("%*c类型： %s\n",indent+blanks,' ',"FLOAT数组");
-			display(T->ptr.pExp1,indent+blanks);
-			break;
-		case INTS_NODE:
-			if (indent == 0) {
-				printf("%*c外部变量定义:\n",indent,' ');
-			} else {
-				printf("%*c内部变量定义:\n",indent,' ');
-			}
-			printf("%*c类型： %s\n",indent+blanks,' ',"INT数组");
-			display(T->ptr.pExp1,indent+blanks);
-			break;
 		case DECLARE_SUB_NODE:
 			display(T->ptr.pExp1,indent);
 			if(T->ptr.pExp2 != NULL)
 				display(T->ptr.pExp2,indent);
 			break;
 		case ID_NODE:
-			printf("%*cID： %s\n",indent,' ',T->type_id);
+			printf("%*cID： %s\n",indent,' ',T->id.type_id);
+			break;
+		case ID_ARRAY_NODE:
+			printf("%*cID_ARRAY： %s 维度：%d ",indent,' ',T->id.type_id,T->id.dimension);
+			switch(T->id.dimension) {
+				case 1:
+					printf("下标：%d\n",T->id.index1);
+					break;
+				case 2:
+					printf("下标：%d %d\n",T->id.index1,T->id.index2);
+					break;
+				case 3:
+					printf("下标：%d %d %d\n",T->id.index1,T->id.index2,T->id.index3);
+					break;
+			}
 			break;
 		case INTEGER_NODE:
 			printf("%*cINT： %d\n",indent,' ',T->type_integer);
@@ -163,6 +159,32 @@ void display(PEXP T,int indent)
 			break;
 		case BREAK_NODE:
 			printf("%*c%s\n",indent,' ',"BREAK");
+			break;
+		case FUNCTION_DECLARE_NODE:
+			printf("%*c函数声明语句:\n",indent,' ');
+			printf("%*c返回类型:\n",indent+blanks,' ');
+			switch(T->function.returnType){
+				case INT_FUNCTION:
+					printf("%*c int:\n",indent+blanks*2,' ');
+					break;
+				case CHAR_FUNCTION:
+					printf("%*c char:\n",indent+blanks*2,' ');
+					break;
+				case FLOAT_FUNCTION:
+					printf("%*c float:\n",indent+blanks*2,' ');
+					break;
+				
+			}
+			if(T->function.pExp != NULL) {
+				printf("%*c参数声明:\n",indent+blanks,' ');
+				display(T->function.pExp,indent+blanks*2);
+			}
+			break;
+		case FUNCTION_FIRE_NODE:
+			printf("%*c函数调用语句:\n",indent,' ');
+			printf("%*c函数名:\n",indent+blanks,' ');
+			printf("%*c %s:\n",indent+blanks*2,' ',T->fire.type_id);
+			printf("%*c参数:\n",indent+blanks,' ');
 			break;
 	}
 
