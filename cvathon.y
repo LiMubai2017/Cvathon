@@ -1,6 +1,6 @@
 %{
 #include "stdio.h"
-#include "math.h"
+//#include "math.h"
 #include "Node.h"
 #include "string.h"
 extern char *yytext;
@@ -10,6 +10,7 @@ void display(struct Exp *,int);
 void displayMessage(int , int);
 int nestCodeBlock = 0;
 int exp1 = 0;
+int exp2 = 0;
 %}
 
 %union {
@@ -18,7 +19,7 @@ int exp1 = 0;
 	struct Exp *pExp;
 };
 
-%type  <pExp> line exp exp_unary declare sub_declare id if_line condition while_line control id_array assign for_line function function_fire
+%type  <pExp> line exp exp_unary declare sub_declare id if_line condition while_line control id_array assign for_line function function_fire return_line
 
 %token <type_integer> INTEGER
 %token <type_id> ID
@@ -27,10 +28,10 @@ int exp1 = 0;
 %token PLUS MINUS STAR DIV ASSIGNOP
 %token INT FLOAT CHAR
 %token GREATER LESS EQUAL GREATER_EQUAL LESS_EQUAL
-%token IF ELSE WHILE CONTINUE BREAK FOR
+%token IF ELSE WHILE CONTINUE BREAK FOR RETURN
 %token INC DEC
 
-%right INT CHAR FLOAT
+%right INT CHAR FLOAT VOID
 %right IF ELSE WHILE CONTINUE BREAK
 %left EQUAL GREATER_EQUAL LESS_EQUAL GREATER LESS
 %left ASSIGNOP
@@ -56,10 +57,12 @@ line : '\n'    { ;}
 	 | for_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | ELSE '\n' {if(exp1) {displayMessage(1,nestCodeBlock*blanks);}}
 	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | return_line '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | error '\n' { printf("line error!\n");}
 	 ;
 
-function : INT ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=NULL;}
+function : VOID ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=VOID_FUNCTION;$$->function.pExp=NULL;}
+		 | INT ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=NULL;}
 		 | CHAR ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=NULL;}
 		 | FLOAT ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=NULL;}
 		 | INT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=$4;}
@@ -68,6 +71,9 @@ function : INT ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION
 function_fire : ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.type_id,$1);}
 control : CONTINUE  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONTINUE_NODE;}
 		| BREAK 	{$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=BREAK_NODE;}
+return_line : RETURN {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_VOID;}
+			| RETURN id {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_VARIABLE;$$->return_exp.pExp=$2;}
+			| RETURN INTEGER {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_INTEGER;$$->return_exp.integerValue=$2;}
 while_line : WHILE LP condition RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=WHILE_NODE;$$->ptr.pExp1=$3;}
 for_line: FOR LP assign ';' condition ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=$3;$$->for_exp.p2=$5;$$->for_exp.p3=$7;}
 		| FOR LP ';' condition ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=NULL;$$->for_exp.p2=$4;$$->for_exp.p3=$6;}
@@ -114,8 +120,9 @@ id_array : ID MLP INTEGER MRP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_
 
 int main(int argc, char *argv[]){
 	yyin=fopen(argv[1],"r");
-	if (argc >= 3 && strcmp(argv[2],"-exp1")==0) {
-		exp1 = 1;
+	if (argc >= 3) {
+		if (strcmp(argv[2],"-exp1")==0) exp1 = 1;
+		if (strcmp(argv[2],"-exp2")==0) exp2 = 1;
 	}
 	if (!yyin) return;
 	yyparse();

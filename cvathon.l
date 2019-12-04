@@ -11,6 +11,7 @@ typedef union {
 } YYLVAL;
 #define YYSTYPE YYLVAL
 extern int exp1;
+extern int exp2;
 ARRAYP array = NULL,current;
 %}
 id   [A-Za-z][A-Za-z0-9]*  
@@ -20,12 +21,14 @@ integer    [0-9]+
 int			{addWord(INT_ARRAY,yytext);return INT;}
 char		{addWord(CHAR_ARRAY,yytext);return CHAR;}
 float		{addWord(FLOAT_ARRAY,yytext);return FLOAT;}
+void		{return VOID;}
 if			{addWord(IF_ARRAY,yytext);return IF;}
 else		{addWord(ELSE_ARRAY,yytext);return ELSE;}
 while		{addWord(WHILE_ARRAY,yytext);return WHILE;}
 "for"		{addWord(FOR_ARRAY,yytext);return FOR;}
 break		{addWord(BREAK_ARRAY,yytext);return BREAK;}
 continue	{addWord(CONTINUE_ARRAY,yytext);return CONTINUE;}
+return		{return RETURN;}
 {id}       {addWord(ID_ARRAY,yytext);strcpy(yylval.type_id,  yytext); return ID;}
 (==)	   {addWord(EQUAL_ARRAY,yytext);return EQUAL;}
 (>=)	   {addWord(GREATER_EQUAL_ARRAY,yytext);return GREATER_EQUAL;}

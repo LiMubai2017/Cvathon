@@ -2,6 +2,7 @@ char test()
 {
 	int a
 	a++
+	return a
 }
 
 int main(int a)

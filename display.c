@@ -173,6 +173,9 @@ void display(PEXP T,int indent)
 				case FLOAT_FUNCTION:
 					printf("%*c float:\n",indent+blanks*2,' ');
 					break;
+				case VOID_FUNCTION:
+					printf("%*c void:\n",indent+blanks*2,' ');
+					break;
 				
 			}
 			if(T->function.pExp != NULL) {
@@ -185,6 +188,21 @@ void display(PEXP T,int indent)
 			printf("%*c函数名:\n",indent+blanks,' ');
 			printf("%*c %s:\n",indent+blanks*2,' ',T->fire.type_id);
 			printf("%*c参数:\n",indent+blanks,' ');
+			break;
+		case RETURN_NODE:
+			printf("%*c返回语句:\n",indent,' ');
+			printf("%*c返回值:\n",indent+blanks,' ');
+			switch(T->return_exp.returnType) {
+				case RETURN_VOID:
+					printf("%*cVOID:\n",indent+blanks*2,' ');
+					break;
+				case RETURN_VARIABLE:
+					display(T->return_exp.pExp,indent+blanks*2);
+					break;
+				case RETURN_INTEGER:
+					printf("%*cINTEGER   %d:\n",indent+blanks*2,' ',T->return_exp.integerValue);
+					break;
+			}
 			break;
 	}
 
