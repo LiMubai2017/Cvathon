@@ -1,7 +1,14 @@
+//测试代码
+/*
+	测试代码
+	待填
+*/
 int a,b,c
+int a
 float m,n
 int fibo(int a) 
 {
+	int d,e
 	if (a==1 || a==2) 
 	{
 		return 1

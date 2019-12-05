@@ -12,11 +12,12 @@ typedef struct Exp {
 	enum node_kind kind;
 	union {
 		struct {
+			char function_name[33];
 			enum function_type returnType;
 			struct Exp *pExp;
 		}function;
 		struct {
-			char type_id[33]; 
+			char fire_id[33]; 
 			struct Exp *valueList;
 		}fire;
 		struct {

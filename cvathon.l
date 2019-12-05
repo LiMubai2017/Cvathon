@@ -1,4 +1,5 @@
 %option yylineno
+%x COMMENT
 %{
 #include "cvathon.tab.h"
 #include "string.h"
@@ -18,6 +19,10 @@ ARRAYP array = NULL,current;
 id   [A-Za-z][A-Za-z0-9]*  
 integer    [0-9]+
 %%
+"//".* {}
+"/*" {BEGIN COMMENT;}
+<COMMENT>"*/" {BEGIN INITIAL;}
+<COMMENT>. {}
 {integer}      {addWord(INTEGER_ARRAY,yytext);yylval.type_integer=atoi(yytext); return INTEGER;}
 int			{addWord(INT_ARRAY,yytext);return INT;}
 char		{addWord(CHAR_ARRAY,yytext);return CHAR;}

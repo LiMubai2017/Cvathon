@@ -186,7 +186,7 @@ void display(PEXP T,int indent)
 		case FUNCTION_FIRE_NODE:
 			printf("%*c函数调用语句:\n",indent,' ');
 			printf("%*c函数名:\n",indent+blanks,' ');
-			printf("%*c %s:\n",indent+blanks*2,' ',T->fire.type_id);
+			printf("%*c %s:\n",indent+blanks*2,' ',T->fire.fire_id);
 			printf("%*c参数:\n",indent+blanks,' ');
 			if(T->fire.valueList == NULL) {
 				printf("%*c VOID:\n",indent+blanks*2,' ');

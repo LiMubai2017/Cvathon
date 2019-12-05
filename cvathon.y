@@ -12,6 +12,8 @@ int nestCodeBlock = 0;
 int exp1 = 0;
 int showWordArray=0;
 int exp2 = 0;
+int offset[5]={0,0,0,0,0};
+extern int yylineno;
 %}
 
 %union {
@@ -20,7 +22,7 @@ int exp2 = 0;
 	struct Exp *pExp;
 };
 
-%type  <pExp> line exp exp_unary declare sub_declare id if_line condition while_line control id_array assign for_line function function_fire return_line value_list condition_list
+%type  <pExp> line exp exp_unary declare sub_declare id if_line condition while_line control id_array assign for_line function function_fire return_line value_list condition_list 
 
 %token <type_integer> INTEGER
 %token <type_id> ID
@@ -47,35 +49,36 @@ input:
 	 | input line
 	 ;
 line : '\n'    { ;}
-	 | function '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | function '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;}}
 	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;}}
 	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);nestCodeBlock+=2;}}
-	 | BRP '\n' {if(exp1) {nestCodeBlock-=2;}}
+	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);}nestCodeBlock+=1;}
+	 | BRP '\n' {tableOut(nestCodeBlock);nestCodeBlock-=1;offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}
 	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | while_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | for_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | ELSE '\n' {if(exp1) {displayMessage(1,nestCodeBlock*blanks);}}
 	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | return_line '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
 	 | error '\n' { printf("line error!\n");}
 	 ;
 
-function : VOID ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=VOID_FUNCTION;$$->function.pExp=NULL;}
-		 | INT ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=NULL;}
-		 | CHAR ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=NULL;}
-		 | FLOAT ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=NULL;}
-		 | INT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=$4;}
-		 | CHAR ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=$4;}
-		 | FLOAT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=$4;}
-function_fire : ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.type_id,$1);$$->fire.valueList=NULL;}
-			  | ID LP value_list RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.type_id,$1);$$->fire.valueList=$3;}
+function : VOID ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=VOID_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
+		 | INT ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
+		 | CHAR ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
+		 | FLOAT ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
+		 | INT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
+		 | CHAR ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
+		 | FLOAT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
+function_fire : ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.fire_id,$1);$$->fire.valueList=NULL;}
+			  | ID LP value_list RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.fire_id,$1);$$->fire.valueList=$3;}
 value_list : exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=VALUE_LIST_NODE; $$->ptr.pExp1=$1;$$->ptr.pExp2=NULL;}
 		   | exp ',' value_list {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=VALUE_LIST_NODE; $$->ptr.pExp1=$1; $$->ptr.pExp2=$3;}
 control : CONTINUE  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONTINUE_NODE;}
 		| BREAK 	{$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=BREAK_NODE;}
+		| ELSE 		{if(exp1) displayMessage(1,nestCodeBlock*blanks);$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ELSE_NODE;}
 return_line : RETURN {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_VOID;}
 			| RETURN exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_EXP;$$->return_exp.pExp=$2;}
 while_line : WHILE LP condition_list RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=WHILE_NODE;$$->ptr.pExp1=$3;}
