@@ -11,6 +11,7 @@ typedef union {
 } YYLVAL;
 #define YYSTYPE YYLVAL
 extern int exp1;
+extern int showWordArray;
 extern int exp2;
 ARRAYP array = NULL,current;
 %}
@@ -35,6 +36,8 @@ return		{return RETURN;}
 (<=)	   {addWord(LESS_EQUAL_ARRAY,yytext);return LESS_EQUAL;}
 "++"	   {addWord(INC_ARRAY,yytext);return INC;}
 "--"	   {addWord(DEC_ARRAY,yytext);return DEC;}
+"||"	   {return OR;}
+"&&"	   {return AND;}
 [=]        {addWord(ASSIGNOP_ARRAY,yytext);return ASSIGNOP;}
 [+]        {addWord(PLUS_ARRAY,yytext);return PLUS;}
 [-]        {addWord(MINUS_ARRAY,yytext);return MINUS;}
@@ -53,7 +56,7 @@ return		{return RETURN;}
 [>]		   {addWord(GREATER_ARRAY,yytext);return GREATER;}
 [<]		   {addWord(LESS_ARRAY,yytext);return LESS;}
 .          {printf("error in line %d\n",yylineno);}
-<<EOF>>	   {if(exp1) {displayMessage(2,0);displayWordsArray(array);}yyterminate();}
+<<EOF>>	   {if(exp1&&showWordArray) {displayMessage(2,0);displayWordsArray(array);}yyterminate();}
 %%
 /*
 int main()

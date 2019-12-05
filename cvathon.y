@@ -10,6 +10,7 @@ void display(struct Exp *,int);
 void displayMessage(int , int);
 int nestCodeBlock = 0;
 int exp1 = 0;
+int showWordArray=0;
 int exp2 = 0;
 %}
 
@@ -19,7 +20,7 @@ int exp2 = 0;
 	struct Exp *pExp;
 };
 
-%type  <pExp> line exp exp_unary declare sub_declare id if_line condition while_line control id_array assign for_line function function_fire return_line
+%type  <pExp> line exp exp_unary declare sub_declare id if_line condition while_line control id_array assign for_line function function_fire return_line value_list condition_list
 
 %token <type_integer> INTEGER
 %token <type_id> ID
@@ -30,6 +31,7 @@ int exp2 = 0;
 %token GREATER LESS EQUAL GREATER_EQUAL LESS_EQUAL
 %token IF ELSE WHILE CONTINUE BREAK FOR RETURN
 %token INC DEC
+%token AND OR
 
 %right INT CHAR FLOAT VOID
 %right IF ELSE WHILE CONTINUE BREAK
@@ -68,18 +70,23 @@ function : VOID ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION
 		 | INT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=$4;}
 		 | CHAR ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=$4;}
 		 | FLOAT ID LP declare RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=$4;}
-function_fire : ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.type_id,$1);}
+function_fire : ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.type_id,$1);$$->fire.valueList=NULL;}
+			  | ID LP value_list RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.type_id,$1);$$->fire.valueList=$3;}
+value_list : exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=VALUE_LIST_NODE; $$->ptr.pExp1=$1;$$->ptr.pExp2=NULL;}
+		   | exp ',' value_list {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=VALUE_LIST_NODE; $$->ptr.pExp1=$1; $$->ptr.pExp2=$3;}
 control : CONTINUE  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONTINUE_NODE;}
 		| BREAK 	{$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=BREAK_NODE;}
 return_line : RETURN {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_VOID;}
-			| RETURN id {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_VARIABLE;$$->return_exp.pExp=$2;}
-			| RETURN INTEGER {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_INTEGER;$$->return_exp.integerValue=$2;}
-while_line : WHILE LP condition RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=WHILE_NODE;$$->ptr.pExp1=$3;}
-for_line: FOR LP assign ';' condition ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=$3;$$->for_exp.p2=$5;$$->for_exp.p3=$7;}
-		| FOR LP ';' condition ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=NULL;$$->for_exp.p2=$4;$$->for_exp.p3=$6;}
-		| FOR LP assign ';' condition ';'  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=$3;$$->for_exp.p2=$5;$$->for_exp.p3=NULL;}
-		| FOR LP  ';' condition ';'  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=NULL;$$->for_exp.p2=$4;$$->for_exp.p3=NULL;}
-if_line : IF LP condition RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=IF_NODE;$$->ptr.pExp1=$3;}
+			| RETURN exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=RETURN_NODE;$$->return_exp.returnType=RETURN_EXP;$$->return_exp.pExp=$2;}
+while_line : WHILE LP condition_list RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=WHILE_NODE;$$->ptr.pExp1=$3;}
+for_line: FOR LP assign ';' condition_list ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=$3;$$->for_exp.p2=$5;$$->for_exp.p3=$7;}
+		| FOR LP ';' condition_list ';' exp_unary RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=NULL;$$->for_exp.p2=$4;$$->for_exp.p3=$6;}
+		| FOR LP assign ';' condition_list ';'  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=$3;$$->for_exp.p2=$5;$$->for_exp.p3=NULL;}
+		| FOR LP  ';' condition_list ';'  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FOR_NODE;$$->for_exp.p1=NULL;$$->for_exp.p2=$4;$$->for_exp.p3=NULL;}
+if_line : IF LP condition_list RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=IF_NODE;$$->ptr.pExp1=$3;}
+condition_list: condition {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONDITION_LIST_NODE; $$->condition_list.pExp1=$1;$$->condition_list.pExp2=NULL;}
+			  | condition AND condition_list {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONDITION_LIST_NODE; $$->condition_list.pExp1=$1;$$->condition_list.pExp2=$3;$$->condition_list.type=LINK_AND;}
+			  | condition OR condition_list {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=CONDITION_LIST_NODE; $$->condition_list.pExp1=$1;$$->condition_list.pExp2=$3;$$->condition_list.type=LINK_OR;}
 condition: exp EQUAL exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=EQUAL_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp GREATER exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=GREATER_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 		 | exp LESS exp {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=LESS_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
@@ -92,7 +99,8 @@ sub_declare	: id ',' sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=
 			| id {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE; $$->ptr.pExp1=$1;$$->ptr.pExp2=NULL;}
 			| id_array ',' sub_declare {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE;$$->ptr.pExp1=$1;$$->ptr.pExp2=$3;}
 			| id_array {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DECLARE_SUB_NODE; $$->ptr.pExp1=$1;$$->ptr.pExp2=NULL;}
-exp	 : assign {$$=$1;}
+exp	 : function_fire {$$=$1;}
+	 | assign {$$=$1;}
 	 | exp_unary {$$=$1;}
 	 | INTEGER {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INTEGER_NODE;$$->type_integer=$1;}
 	 | id {$$=$1;}

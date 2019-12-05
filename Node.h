@@ -3,9 +3,11 @@ enum node_kind {ID_NODE,INTEGER_NODE,LPRP_NODE,PLUS_NODE,MINUS_NODE,STAR_NODE,DI
 				INC_PREFIX_NODE,INC_SUFFIX_NODE,DEC_PREFIX_NODE,DEC_SUFFIX_NODE,
 				IF_NODE,ELSE_NODE,CONTINUE_NODE,BREAK_NODE,WHILE_NODE,RETURN_NODE,
 				GREATER_NODE,LESS_NODE,EQUAL_NODE,GREATER_EQUAL_NODE,LESS_EQUAL_NODE,
-				ID_ARRAY_NODE,FOR_NODE,FUNCTION_DECLARE_NODE,FUNCTION_FIRE_NODE};
+				ID_ARRAY_NODE,FOR_NODE,FUNCTION_DECLARE_NODE,FUNCTION_FIRE_NODE,
+				VALUE_LIST_NODE,CONDITION_LIST_NODE};
 enum function_type {INT_FUNCTION,CHAR_FUNCTION,FLOAT_FUNCTION,VOID_FUNCTION};
-enum return_type {RETURN_VOID,RETURN_VARIABLE,RETURN_INTEGER};
+enum return_type {RETURN_VOID,RETURN_EXP};
+enum link_type {LINK_AND,LINK_OR};
 typedef struct Exp {
 	enum node_kind kind;
 	union {
@@ -15,7 +17,13 @@ typedef struct Exp {
 		}function;
 		struct {
 			char type_id[33]; 
+			struct Exp *valueList;
 		}fire;
+		struct {
+			enum link_type type;
+			struct Exp *pExp1;
+			struct Exp *pExp2;
+		}condition_list;
 		struct {
 			char type_id[33];             
 			int dimension;	
@@ -36,7 +44,6 @@ typedef struct Exp {
 		struct {
 			enum return_type returnType;
 			struct Exp *pExp;
-			int integerValue;
 		}return_exp;
 	};
 } *PEXP;

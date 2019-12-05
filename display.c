@@ -188,6 +188,32 @@ void display(PEXP T,int indent)
 			printf("%*c函数名:\n",indent+blanks,' ');
 			printf("%*c %s:\n",indent+blanks*2,' ',T->fire.type_id);
 			printf("%*c参数:\n",indent+blanks,' ');
+			if(T->fire.valueList == NULL) {
+				printf("%*c VOID:\n",indent+blanks*2,' ');
+			} else {
+				display(T->fire.valueList,indent+blanks*2);
+			}
+			break;
+		case VALUE_LIST_NODE:
+			display(T->ptr.pExp1,indent+blanks);
+			if(T->ptr.pExp2!=NULL)
+				display(T->ptr.pExp2,indent+blanks);
+			break;
+		case CONDITION_LIST_NODE:
+			if(T->condition_list.pExp2!=NULL) {
+				switch(T->condition_list.type) {
+					case LINK_AND:
+						printf("%*cAND:\n",indent,' ');
+						break;
+					case LINK_OR:
+						printf("%*cOR:\n",indent,' ');
+						break;
+				}
+				display(T->condition_list.pExp1,indent+blanks);
+				display(T->condition_list.pExp2,indent+blanks);
+			}	else {
+				display(T->condition_list.pExp1,indent);
+			}
 			break;
 		case RETURN_NODE:
 			printf("%*c返回语句:\n",indent,' ');
@@ -196,11 +222,8 @@ void display(PEXP T,int indent)
 				case RETURN_VOID:
 					printf("%*cVOID:\n",indent+blanks*2,' ');
 					break;
-				case RETURN_VARIABLE:
+				case RETURN_EXP:
 					display(T->return_exp.pExp,indent+blanks*2);
-					break;
-				case RETURN_INTEGER:
-					printf("%*cINTEGER   %d:\n",indent+blanks*2,' ',T->return_exp.integerValue);
 					break;
 			}
 			break;
