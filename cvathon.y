@@ -1,7 +1,7 @@
 %{
 #include "stdio.h"
-//#include "math.h"
 #include "Node.h"
+//#include "math.h"
 #include "string.h"
 extern char *yytext;
 extern FILE *yyin;
@@ -13,6 +13,7 @@ int exp1 = 0;
 int showWordArray=0;
 int exp2 = 0;
 int offset[5]={0,0,0,0,0};
+enum BlockType blockTypes[10]={OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK};
 extern int yylineno;
 %}
 
@@ -50,18 +51,34 @@ input:
 	 ;
 line : '\n'    { ;}
 	 | function '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;}}
-	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;}}
-	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;}}
-	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;}}
-	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;}}
+					if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
+					blockTypes[nestCodeBlock]=FUNCTION_BLOCK;}}
+	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
+						if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+						blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
+					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}
+				if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+				blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);}nestCodeBlock+=1;}
-	 | BRP '\n' {tableOut(nestCodeBlock);nestCodeBlock-=1;offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}
-	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | while_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | for_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | return_line '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | BRP '\n' {if(exp2) {tableOut(nestCodeBlock);}nestCodeBlock-=1;if(exp2){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}}
+	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) blockTypes[nestCodeBlock]=IF_BLOCK;}
+	 | while_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) blockTypes[nestCodeBlock]=WHILE_BLOCK;}
+	 | for_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) blockTypes[nestCodeBlock]=FOR_BLOCK;}
+	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+	 | return_line '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
+					if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | error '\n' { printf("line error!\n");}
 	 ;
 

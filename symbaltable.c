@@ -14,6 +14,7 @@ int index=0;
 extern int offset[5];
 SymbalP table[100];
 char no[] = "V";
+extern enum BlockType blockTypes[10];
 
 void push(SymbalP newOne)
 {
@@ -24,7 +25,7 @@ void push(SymbalP newOne)
 
 void tableOut(int level)
 {
-	while(table[index-1]->level==level) {
+	while(index > 0 && table[index-1]->level==level) {
 		index--;
 		free(table[index]);
 	}
@@ -133,12 +134,15 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 	return 1;
 }
 
-//1-no exist ; 0-exist
+//1-no exist(or error); 0-exist
 int checkTable(PEXP T,int level,int line)
 {
 	char *name;
 	int result;
+	int i;
 	switch(T->kind) {
+		case INTEGER_NODE:
+			return 0;
 		case FUNCTION_FIRE_NODE:
 			name=T->fire.fire_id;
 			result = _checkExist(name,level,line,FLAG_F);
@@ -149,10 +153,47 @@ int checkTable(PEXP T,int level,int line)
 			return result;
 			break;
 		case CONTINUE_NODE:
-			break;
+			result=1;
+			for(i=level-1;i>=0;i--) {
+				if(blockTypes[i] == FOR_BLOCK || blockTypes[i] == WHILE_BLOCK) {
+					result=0;
+				}
+			}
+			if(result) {
+				printf("错误  行号：%d  continue不在循环中\n",line);
+				getchar();
+			}	else {
+			}
+			return result;
 		case BREAK_NODE:
+			result=1;
+			for(i=level-1;i>=0;i--) {
+				if(blockTypes[i] == FOR_BLOCK || blockTypes[i] == WHILE_BLOCK) {
+					result=0;
+				}
+			}
+			if(result) {
+				printf("错误  行号：%d  break不在循环中\n",line);
+				getchar();
+			}	
+			return result;
 			break;
 		case ELSE_NODE:
+			if(blockTypes[level] == IF_BLOCK) {
+				return 0;
+			} else {
+				printf("错误  行号：%d  else不跟在if之后\n",line);
+				getchar();
+				return 1;
+			}
+			break;
+		case RETURN_NODE:
+			if(level==0) {
+				printf("错误  行号：%d  函数体外使用return\n",line);
+				getchar();
+				return 1;
+			}
+			return 0;
 			break;
 		case ID_NODE:
 			name=T->id.type_id;
@@ -210,15 +251,6 @@ int _checkExist(char target[],int level,int line,enum FlagType flag)
 	}
 	return 1;
 }
-
-/*
-char name[30];
-	char no[10];
-	int level;
-	enum SymbalType type;
-	char flag;
-	int offset;
-*/
 
 void displayTable()
 {

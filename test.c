@@ -18,16 +18,30 @@ int fibo(int a)
 	{
 		return 1
 	}
+	else
+	{
+	}
+/*								//控制流检查，else不跟在if后面
+	else
+	{
+	}
+*/
 	return fibo(a-1)+fibo(a-2)
 }
+//return 							//控制流检查：在函数外部使用return
 int main()
 {
 	int m,n,i
-	i=1
+	for(i=1;i<10;i++)
+	{
+		continue
+	}
+//	continue						//控制流检查，循环外部使用continue
 	while (i<=m)
 	{
 		n=fibo(i)
-		write(n)
 		i=i+1
+//		break						//控制流检查，循环外部使用break
 	}
+	break
 }

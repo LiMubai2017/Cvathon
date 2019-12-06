@@ -227,6 +227,8 @@ void display(PEXP T,int indent)
 					break;
 			}
 			break;
+		default:
+			break;
 	}
 
 }

@@ -8,6 +8,7 @@ enum node_kind {ID_NODE,INTEGER_NODE,LPRP_NODE,PLUS_NODE,MINUS_NODE,STAR_NODE,DI
 enum function_type {INT_FUNCTION,CHAR_FUNCTION,FLOAT_FUNCTION,VOID_FUNCTION};
 enum return_type {RETURN_VOID,RETURN_EXP};
 enum link_type {LINK_AND,LINK_OR};
+enum BlockType{IF_BLOCK,WHILE_BLOCK,FOR_BLOCK,FUNCTION_BLOCK,OTHER_BLOCK};
 typedef struct Exp {
 	enum node_kind kind;
 	union {
