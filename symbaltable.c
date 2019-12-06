@@ -36,10 +36,11 @@ void tableOut(int level)
 int insertIntoTable(PEXP T,int level,int line)
 {
 	char *name;
+	int result;
 	switch(T->kind) {
 		case FUNCTION_DECLARE_NODE:
 			name=T->function.function_name;
-			if(_checkTable(name,level,line)) {
+			if(_checkDefine(name,level,line)) {
 				SymbalP current=(SymbalP)malloc(sizeof(struct Symbal));
 				strcpy(current->name,T->function.function_name);
 				strcpy(current->no,no);
@@ -66,6 +67,7 @@ int insertIntoTable(PEXP T,int level,int line)
 				}
 				return 1;
 			} else {
+				printf("错误  行号：%d  函数名重复定义%s\n",line,name);
 				return 0;
 			}
 			break;
@@ -110,7 +112,11 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 			break;
 		case ID_NODE:
 			name=T->id.type_id;
-			if(!_checkTable(name,level,line)) return 0;
+			if(!_checkDefine(name,level,line)) {
+				printf("错误  行号：%d  变量名重复定义%s\n",line,name);
+				getchar();
+				return 0;
+			}
 			current=(SymbalP)malloc(sizeof(struct Symbal));
 			strcpy(current->name,T->function.function_name);
 			strcpy(current->no,no);
@@ -127,14 +133,20 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 	return 1;
 }
 
-//1-no error ; 0-error
+//1-no exist ; 0-exist
 int checkTable(PEXP T,int level,int line)
 {
 	char *name;
+	int result;
 	switch(T->kind) {
 		case FUNCTION_FIRE_NODE:
-			break;
-		case ASSIGN_NODE:
+			name=T->fire.fire_id;
+			result = _checkExist(name,level,line,FLAG_F);
+			if(result) {
+				printf("错误  行号：%d  函数未定义%s\n",line,name);
+				getchar();
+			} 
+			return result;
 			break;
 		case CONTINUE_NODE:
 			break;
@@ -142,19 +154,57 @@ int checkTable(PEXP T,int level,int line)
 			break;
 		case ELSE_NODE:
 			break;
+		case ID_NODE:
+			name=T->id.type_id;
+			result = _checkExist(name,level,line,FLAG_V);
+			if(result) {
+				printf("错误  行号：%d  变量未定义%s\n",line,name);
+				getchar();
+			} 
+			return result;
+			break;
+		case ASSIGN_NODE:
+		case PLUS_NODE:
+		case STAR_NODE:
+		case MINUS_NODE:
+		case DIV_NODE:
+			result = checkTable(T->ptr.pExp1,level,line);
+			if(!result) {
+				result = checkTable(T->ptr.pExp2,level,line);
+			}
+			return result;
+			break;
+		case UMINUS_NODE:
+		case INC_PREFIX_NODE:
+		case DEC_PREFIX_NODE:
+		case INC_SUFFIX_NODE:
+		case DEC_SUFFIX_NODE:
+			checkTable(T->ptr.pExp1,level,line);
+			break;
 	}
 	return 1;
 }
 
-//1-no error ; 0-error
-int _checkTable(char target[],int level,int line)
+//1-no exist ; 0-exist
+int _checkDefine(char target[],int level,int line)
 {
 	int current = index;
 	while(current>0 && table[current-1]->level==level) {
 		current--;
 		if(strcmp(table[current]->name,target)==0) {
-			printf("错误  行号：%d  重复定义%s\n",line,target);
-			getchar();
+			return 0;
+		}
+	}
+	return 1;
+}
+
+//1-no exist ; 0-exist
+int _checkExist(char target[],int level,int line,enum FlagType flag)
+{
+	int current = index;
+	while(current>0 && table[current-1]->level<=level) {
+		current--;
+		if(strcmp(table[current]->name,target)==0 && table[current]->flag==flag) {
 			return 0;
 		}
 	}

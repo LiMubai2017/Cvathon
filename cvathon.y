@@ -51,10 +51,10 @@ input:
 line : '\n'    { ;}
 	 | function '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;}}
-	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;}}
 	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;}}
-	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}}
-	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}}
+	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;}}
+	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;}}
 	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);}nestCodeBlock+=1;}
 	 | BRP '\n' {tableOut(nestCodeBlock);nestCodeBlock-=1;offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}
 	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}}
