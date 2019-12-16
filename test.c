@@ -13,7 +13,7 @@ int fibo(int a)
 //	f++							//上下文相关性检查：未定义的变量f
 //	a=((b+c)-f)*d+e				//上下文相关性检查：未定义的变量f
 //	test()						//上下文相关性检查：未定义的函数test()
-//	a()							//上下文相关性检查：试图混淆变量与函数
+//	a()							//上下文相关性检查：对非函数名采用函数调用形式
 	if (a==1 || a==2) 
 	{
 		return 1
@@ -32,16 +32,23 @@ int fibo(int a)
 int main()
 {
 	int m,n,i
+	float z
+	i=a
+//	i=m+z							//类型检查，赋值类型不匹配
 	for(i=1;i<10;i++)
 	{
-		continue
+		if(a>1)
+		{
+			continue
+		}
 	}
 //	continue						//控制流检查，循环外部使用continue
 	while (i<=m)
 	{
-		n=fibo(i)
+		fibo(i)
+//		fibo(z)						//类型检查，函数调用参数类型不匹配
 		i=i+1
-//		break						//控制流检查，循环外部使用break
+		break						
 	}
-	break
+//	break							//控制流检查，循环外部使用break
 }

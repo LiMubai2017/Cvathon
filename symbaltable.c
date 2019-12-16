@@ -33,6 +33,17 @@ void tableOut(int level)
 	getchar();
 }
 
+enum SymbalType _getVariableType(char target[])
+{
+	int current = index;
+	while(1) {
+		current--;
+		if(strcmp(table[current]->name,target)==0) {
+			return table[current]->type;
+		}
+	}
+}
+
 //1-success ; 0-failure
 int insertIntoTable(PEXP T,int level,int line)
 {
@@ -140,6 +151,8 @@ int checkTable(PEXP T,int level,int line)
 	char *name;
 	int result;
 	int i;
+	enum SymbalType type;
+	PEXP left;
 	switch(T->kind) {
 		case INTEGER_NODE:
 			return 0;
@@ -149,7 +162,14 @@ int checkTable(PEXP T,int level,int line)
 			if(result) {
 				printf("错误  行号：%d  函数未定义%s\n",line,name);
 				getchar();
+				return 1;
 			} 
+			type=_getVariableType(name);
+			result = _checkExpType(type,T->fire.valueList);
+			if(result) {
+				printf("错误  行号：%d  函数调用类型不匹配\n",line);
+				getchar();
+			}
 			return result;
 			break;
 		case CONTINUE_NODE:
@@ -205,6 +225,20 @@ int checkTable(PEXP T,int level,int line)
 			return result;
 			break;
 		case ASSIGN_NODE:
+			result = checkTable(T->ptr.pExp1,level,line);
+			if(!result) {
+				result = checkTable(T->ptr.pExp2,level,line);
+			}
+			if(result) {
+				return 1;
+			}
+			type = _getVariableType((T->ptr.pExp1)->id.type_id);
+			result = _checkExpType(type,T->ptr.pExp2);
+			if(result) {
+				printf("错误  行号：%d  赋值类型不匹配\n",line);
+				getchar();
+			}
+			return result;
 		case PLUS_NODE:
 		case STAR_NODE:
 		case MINUS_NODE:
@@ -224,6 +258,48 @@ int checkTable(PEXP T,int level,int line)
 			break;
 	}
 	return 1;
+}
+
+
+//1-error ; 0-no error
+int _checkExpType(enum SymbalType type,PEXP T)
+{
+	switch(T->kind) {
+		case VALUE_LIST_NODE:
+			return _checkExpType(type,T->ptr.pExp1);
+			break;
+		case INTEGER_NODE:
+			if(type == TYPE_INT) {
+				return 0;
+			} else {
+				return 1;
+			}
+			break;
+		case PLUS_NODE:
+		case STAR_NODE:
+		case MINUS_NODE:
+		case DIV_NODE:
+			if(_checkExpType(type,T->ptr.pExp1)||_checkExpType(type,T->ptr.pExp2)) {
+				return 1;
+			} else {
+				return 0;
+			}
+			break;
+		case ID_NODE:
+			if(_getVariableType(T->id.type_id) == type) {
+				return 0;
+			}	else {
+				return 1;
+			}
+			break;
+		case UMINUS_NODE:
+		case INC_PREFIX_NODE:
+		case INC_SUFFIX_NODE:
+		case DEC_PREFIX_NODE:
+		case DEC_SUFFIX_NODE:
+			return _checkExpType(type,T->ptr.pExp1);
+			break;
+	}
 }
 
 //1-no exist ; 0-exist
