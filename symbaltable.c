@@ -12,15 +12,44 @@ typedef struct Symbal{
 }*SymbalP;
 int index=0;
 extern int offset[5];
+extern int exp2;
 SymbalP table[100];
-char no[] = "V";
+int v_index=0;
 extern enum BlockType blockTypes[10];
+
+int getIntLen(int num)
+{
+	if(num<=0) return 1;
+	int val=0;
+	while(num > 0) {
+		val++;
+		num/=10;
+	}
+	return val;
+}
+
+char* getNewNo()
+{
+	v_index++;
+	int len = getIntLen(v_index);
+	char *noVal = (char*)malloc(sizeof(char)*(1+len+1));
+	noVal[0]='V';
+	int temp = v_index;
+	for(int i = len; i >= 1; i--) {
+		noVal[i]=temp%10+'0';
+		temp/=10;
+	}
+	noVal[len+1]='\0';
+	return noVal;
+}
 
 void push(SymbalP newOne)
 {
 	table[index++]=newOne;
-	displayTable();
-	getchar();
+	if(exp2) {
+		displayTable();
+		getchar();
+	}
 }
 
 void tableOut(int level)
@@ -29,8 +58,10 @@ void tableOut(int level)
 		index--;
 		free(table[index]);
 	}
-	displayTable();
-	getchar();
+	if(exp2) {
+		displayTable();
+		getchar();
+	}
 }
 
 enum SymbalType _getVariableType(char target[])
@@ -55,7 +86,7 @@ int insertIntoTable(PEXP T,int level,int line)
 			if(_checkDefine(name,level,line)) {
 				SymbalP current=(SymbalP)malloc(sizeof(struct Symbal));
 				strcpy(current->name,T->function.function_name);
-				strcpy(current->no,no);
+				strcpy(current->no,"");
 				current->level=level;
 				switch (T->function.returnType){
 					case INT_FUNCTION:
@@ -125,13 +156,15 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 		case ID_NODE:
 			name=T->id.type_id;
 			if(!_checkDefine(name,level,line)) {
-				printf("错误  行号：%d  变量名重复定义%s\n",line,name);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  变量名重复定义%s\n",line,name);
+					getchar();
+				}
 				return 0;
 			}
 			current=(SymbalP)malloc(sizeof(struct Symbal));
 			strcpy(current->name,T->function.function_name);
-			strcpy(current->no,no);
+			strcpy(current->no,getNewNo());
 			current->level=level;
 			current->type=type;
 			current->flag=FLAG_V;
@@ -160,15 +193,19 @@ int checkTable(PEXP T,int level,int line)
 			name=T->fire.fire_id;
 			result = _checkExist(name,level,line,FLAG_F);
 			if(result) {
-				printf("错误  行号：%d  函数未定义%s\n",line,name);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  函数未定义%s\n",line,name);
+					getchar();
+				}
 				return 1;
 			} 
 			type=_getVariableType(name);
 			result = _checkExpType(type,T->fire.valueList);
 			if(result) {
-				printf("错误  行号：%d  函数调用类型不匹配\n",line);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  函数调用类型不匹配\n",line);
+					getchar();
+				}
 			}
 			return result;
 			break;
@@ -180,8 +217,10 @@ int checkTable(PEXP T,int level,int line)
 				}
 			}
 			if(result) {
-				printf("错误  行号：%d  continue不在循环中\n",line);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  continue不在循环中\n",line);
+					getchar();
+				}
 			}	else {
 			}
 			return result;
@@ -193,8 +232,10 @@ int checkTable(PEXP T,int level,int line)
 				}
 			}
 			if(result) {
-				printf("错误  行号：%d  break不在循环中\n",line);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  break不在循环中\n",line);
+					getchar();
+				}
 			}	
 			return result;
 			break;
@@ -202,15 +243,19 @@ int checkTable(PEXP T,int level,int line)
 			if(blockTypes[level] == IF_BLOCK) {
 				return 0;
 			} else {
-				printf("错误  行号：%d  else不跟在if之后\n",line);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  else不跟在if之后\n",line);
+					getchar();
+				}
 				return 1;
 			}
 			break;
 		case RETURN_NODE:
 			if(level==0) {
-				printf("错误  行号：%d  函数体外使用return\n",line);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  函数体外使用return\n",line);
+					getchar();
+				}
 				return 1;
 			}
 			return 0;
@@ -219,8 +264,10 @@ int checkTable(PEXP T,int level,int line)
 			name=T->id.type_id;
 			result = _checkExist(name,level,line,FLAG_V);
 			if(result) {
-				printf("错误  行号：%d  变量未定义%s\n",line,name);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  变量未定义%s\n",line,name);
+					getchar();
+				}
 			} 
 			return result;
 			break;
@@ -235,8 +282,10 @@ int checkTable(PEXP T,int level,int line)
 			type = _getVariableType((T->ptr.pExp1)->id.type_id);
 			result = _checkExpType(type,T->ptr.pExp2);
 			if(result) {
-				printf("错误  行号：%d  赋值类型不匹配\n",line);
-				getchar();
+				if(exp2) {
+					printf("错误  行号：%d  赋值类型不匹配\n",line);
+					getchar();
+				}
 			}
 			return result;
 		case PLUS_NODE:
@@ -286,6 +335,13 @@ int _checkExpType(enum SymbalType type,PEXP T)
 			}
 			break;
 		case ID_NODE:
+			if(_getVariableType(T->id.type_id) == type) {
+				return 0;
+			}	else {
+				return 1;
+			}
+			break;
+		case FUNCTION_FIRE_NODE:
 			if(_getVariableType(T->id.type_id) == type) {
 				return 0;
 			}	else {
