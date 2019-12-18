@@ -62,10 +62,12 @@ line : '\n'    { ;}
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
-					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
+					if(exp3) {translateStmt($1);}}
 	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}
 				if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
-				blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+				blockTypes[nestCodeBlock]=OTHER_BLOCK;}
+				if(exp3) {translateStmt($1);}}
 	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);}nestCodeBlock+=1;}
 	 | BRP '\n' {if(exp2 || exp3) {tableOut(nestCodeBlock);}nestCodeBlock-=1;if(exp2 || exp3){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}}
 	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}

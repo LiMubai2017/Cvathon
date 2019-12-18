@@ -1,6 +1,13 @@
 #include "string.h"
 #include "Node.h"
 #include <stdlib.h>
+
+extern enum BlockType blockTypes[10];
+extern int getIntLen(int );
+extern int offset[5];
+extern int exp2;
+extern int exp3;
+
 enum SymbalType{TYPE_INT,TYPE_FLOAT,TYPE_CHAR,TYPE_VOID};
 enum FlagType{FLAG_F,FLAG_P,FLAG_V};
 typedef struct Symbal{
@@ -12,23 +19,8 @@ typedef struct Symbal{
 	int offset;
 }*SymbalP;
 int index=0;
-extern int offset[5];
-extern int exp2;
-extern int exp3;
 SymbalP table[100];
 int v_index=0;
-extern enum BlockType blockTypes[10];
-
-int getIntLen(int num)
-{
-	if(num<=0) return 1;
-	int val=0;
-	while(num > 0) {
-		val++;
-		num/=10;
-	}
-	return val;
-}
 
 char* getNewAlias()
 {
@@ -128,7 +120,7 @@ int insertIntoTable(PEXP T,int level,int line)
 				return 1;
 			} else {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  º¯ÊýÃûÖØ¸´¶¨Òå%s\n",line,name);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
 				}
 				return 0;
 			}
@@ -176,7 +168,7 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 			name=T->id.type_id;
 			if(!_checkDefine(name,level,line)) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  ±äÁ¿ÃûÖØ¸´¶¨Òå%s\n",line,name);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
 					getchar();
 				}
 				return 0;
@@ -213,7 +205,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExist(name,level,line,FLAG_F);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  º¯ÊýÎ´¶¨Òå%s\n",line,name);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
 					getchar();
 				}
 				return 1;
@@ -222,7 +214,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExpType(type,T->fire.valueList);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  º¯Êýµ÷ÓÃÀàÐÍ²»Æ¥Åä\n",line);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í²ï¿½Æ¥ï¿½ï¿½\n",line);
 					getchar();
 				}
 			}
@@ -237,7 +229,7 @@ int checkTable(PEXP T,int level,int line)
 			}
 			if(result) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  continue²»ÔÚÑ­»·ÖÐ\n",line);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  continueï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½\n",line);
 					getchar();
 				}
 			}	else {
@@ -252,7 +244,7 @@ int checkTable(PEXP T,int level,int line)
 			}
 			if(result) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  break²»ÔÚÑ­»·ÖÐ\n",line);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  breakï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½\n",line);
 					getchar();
 				}
 			}	
@@ -263,7 +255,7 @@ int checkTable(PEXP T,int level,int line)
 				return 0;
 			} else {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  else²»¸úÔÚifÖ®ºó\n",line);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  elseï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ifÖ®ï¿½ï¿½\n",line);
 					getchar();
 				}
 				return 1;
@@ -272,7 +264,7 @@ int checkTable(PEXP T,int level,int line)
 		case RETURN_NODE:
 			if(level==0) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  º¯ÊýÌåÍâÊ¹ÓÃreturn\n",line);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½return\n",line);
 					getchar();
 				}
 				return 1;
@@ -284,7 +276,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExist(name,level,line,FLAG_V);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  ±äÁ¿Î´¶¨Òå%s\n",line,name);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
 					getchar();
 				}
 			} 
@@ -302,7 +294,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExpType(type,T->ptr.pExp2);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("´íÎó  ÐÐºÅ£º%d  ¸³ÖµÀàÐÍ²»Æ¥Åä\n",line);
+					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½Öµï¿½ï¿½ï¿½Í²ï¿½Æ¥ï¿½ï¿½\n",line);
 					getchar();
 				}
 			}
@@ -405,7 +397,7 @@ int _checkExist(char target[],int level,int line,enum FlagType flag)
 
 void displayTable()
 {
-	printf("±äÁ¿Ãû\t±ðÃû\t²ãºÅ\tÀàÐÍ\t±ê¼Ç\tÆ«ÒÆÁ¿\n");
+	printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½\tÆ«ï¿½ï¿½ï¿½ï¿½\n");
 	for(int i = 0; i < index; i++) {
 		printf("%s\t%s\t%d\t",table[i]->name,table[i]->alias,table[i]->level);
 		switch(table[i]->type) {
