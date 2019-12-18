@@ -12,6 +12,7 @@ int nestCodeBlock = 0;
 int exp1 = 0;
 int showWordArray=0;
 int exp2 = 0;
+int exp3 = 0;
 int offset[5]={0,0,0,0,0};
 enum BlockType blockTypes[10]={OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK};
 extern int yylineno;
@@ -51,33 +52,33 @@ input:
 	 ;
 line : '\n'    { ;}
 	 | function '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=FUNCTION_BLOCK;}}
 	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-						if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+						if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 						blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | declare '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}
-				if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+				if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 				blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);}nestCodeBlock+=1;}
-	 | BRP '\n' {if(exp2) {tableOut(nestCodeBlock);}nestCodeBlock-=1;if(exp2){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}}
+	 | BRP '\n' {if(exp2 || exp3) {tableOut(nestCodeBlock);}nestCodeBlock-=1;if(exp2 || exp3){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}}
 	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) blockTypes[nestCodeBlock]=IF_BLOCK;}
+					if(exp2 || exp3) blockTypes[nestCodeBlock]=IF_BLOCK;}
 	 | while_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) blockTypes[nestCodeBlock]=WHILE_BLOCK;}
+					if(exp2 || exp3) blockTypes[nestCodeBlock]=WHILE_BLOCK;}
 	 | for_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) blockTypes[nestCodeBlock]=FOR_BLOCK;}
+					if(exp2 || exp3) blockTypes[nestCodeBlock]=FOR_BLOCK;}
 	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | return_line '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
 	 | error '\n' { printf("line error!\n");}
 	 ;
@@ -151,6 +152,7 @@ int main(int argc, char *argv[]){
 	if (argc >= 3) {
 		if (strcmp(argv[2],"-exp1")==0) exp1 = 1;
 		if (strcmp(argv[2],"-exp2")==0) exp2 = 1;
+		if (strcmp(argv[2],"-exp3")==0) exp3 = 1;
 	}
 	if (!yyin) return;
 	yyparse();

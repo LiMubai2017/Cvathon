@@ -1,10 +1,11 @@
 #include "string.h"
 #include "Node.h"
+#include <stdlib.h>
 enum SymbalType{TYPE_INT,TYPE_FLOAT,TYPE_CHAR,TYPE_VOID};
 enum FlagType{FLAG_F,FLAG_P,FLAG_V};
 typedef struct Symbal{
 	char name[30];
-	char no[10];
+	char alias[10];
 	int level;
 	enum SymbalType type;
 	char flag;
@@ -13,6 +14,7 @@ typedef struct Symbal{
 int index=0;
 extern int offset[5];
 extern int exp2;
+extern int exp3;
 SymbalP table[100];
 int v_index=0;
 extern enum BlockType blockTypes[10];
@@ -28,7 +30,7 @@ int getIntLen(int num)
 	return val;
 }
 
-char* getNewNo()
+char* getNewAlias()
 {
 	v_index++;
 	int len = getIntLen(v_index);
@@ -64,15 +66,30 @@ void tableOut(int level)
 	}
 }
 
+char* getVariableAlias(char id[])
+{
+	int current = index;
+	while(current>=0) {
+		current--;
+		if(strcmp(table[current]->alias,id)==0) {
+			return table[current]->alias;
+		}
+	}
+	printf("unexpected error\n");
+	exit(1);
+}
+
 enum SymbalType _getVariableType(char target[])
 {
 	int current = index;
-	while(1) {
+	while(current>=0) {
 		current--;
 		if(strcmp(table[current]->name,target)==0) {
 			return table[current]->type;
 		}
 	}
+	printf("unexpected error\n");
+	exit(1);
 }
 
 //1-success ; 0-failure
@@ -86,7 +103,7 @@ int insertIntoTable(PEXP T,int level,int line)
 			if(_checkDefine(name,level,line)) {
 				SymbalP current=(SymbalP)malloc(sizeof(struct Symbal));
 				strcpy(current->name,T->function.function_name);
-				strcpy(current->no,"");
+				strcpy(current->alias,"");
 				current->level=level;
 				switch (T->function.returnType){
 					case INT_FUNCTION:
@@ -110,7 +127,9 @@ int insertIntoTable(PEXP T,int level,int line)
 				}
 				return 1;
 			} else {
-				printf("错误  行号：%d  函数名重复定义%s\n",line,name);
+				if(exp2 || exp3) {
+					printf("错误  行号：%d  函数名重复定义%s\n",line,name);
+				}
 				return 0;
 			}
 			break;
@@ -156,7 +175,7 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 		case ID_NODE:
 			name=T->id.type_id;
 			if(!_checkDefine(name,level,line)) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  变量名重复定义%s\n",line,name);
 					getchar();
 				}
@@ -164,7 +183,7 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 			}
 			current=(SymbalP)malloc(sizeof(struct Symbal));
 			strcpy(current->name,T->function.function_name);
-			strcpy(current->no,getNewNo());
+			strcpy(current->alias,getNewAlias());
 			current->level=level;
 			current->type=type;
 			current->flag=FLAG_V;
@@ -193,7 +212,7 @@ int checkTable(PEXP T,int level,int line)
 			name=T->fire.fire_id;
 			result = _checkExist(name,level,line,FLAG_F);
 			if(result) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  函数未定义%s\n",line,name);
 					getchar();
 				}
@@ -202,7 +221,7 @@ int checkTable(PEXP T,int level,int line)
 			type=_getVariableType(name);
 			result = _checkExpType(type,T->fire.valueList);
 			if(result) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  函数调用类型不匹配\n",line);
 					getchar();
 				}
@@ -217,7 +236,7 @@ int checkTable(PEXP T,int level,int line)
 				}
 			}
 			if(result) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  continue不在循环中\n",line);
 					getchar();
 				}
@@ -232,7 +251,7 @@ int checkTable(PEXP T,int level,int line)
 				}
 			}
 			if(result) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  break不在循环中\n",line);
 					getchar();
 				}
@@ -243,7 +262,7 @@ int checkTable(PEXP T,int level,int line)
 			if(blockTypes[level] == IF_BLOCK) {
 				return 0;
 			} else {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  else不跟在if之后\n",line);
 					getchar();
 				}
@@ -252,7 +271,7 @@ int checkTable(PEXP T,int level,int line)
 			break;
 		case RETURN_NODE:
 			if(level==0) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  函数体外使用return\n",line);
 					getchar();
 				}
@@ -264,7 +283,7 @@ int checkTable(PEXP T,int level,int line)
 			name=T->id.type_id;
 			result = _checkExist(name,level,line,FLAG_V);
 			if(result) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  变量未定义%s\n",line,name);
 					getchar();
 				}
@@ -282,7 +301,7 @@ int checkTable(PEXP T,int level,int line)
 			type = _getVariableType((T->ptr.pExp1)->id.type_id);
 			result = _checkExpType(type,T->ptr.pExp2);
 			if(result) {
-				if(exp2) {
+				if(exp2 || exp3) {
 					printf("错误  行号：%d  赋值类型不匹配\n",line);
 					getchar();
 				}
@@ -388,7 +407,7 @@ void displayTable()
 {
 	printf("变量名\t别名\t层号\t类型\t标记\t偏移量\n");
 	for(int i = 0; i < index; i++) {
-		printf("%s\t%s\t%d\t",table[i]->name,table[i]->no,table[i]->level);
+		printf("%s\t%s\t%d\t",table[i]->name,table[i]->alias,table[i]->level);
 		switch(table[i]->type) {
 			case TYPE_INT:
 				printf("int\t");
