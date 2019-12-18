@@ -1,8 +1,8 @@
 #include "Node.h"
 #include <stdio.h>
 
-extern int getIntLen(int );
-extern void log(char );
+extern int getIntLen(int);
+extern void log(char *);
 
 int temp_index = 0;
 int label_index = 0;
@@ -41,20 +41,21 @@ typedef struct CodeNode
 
 void printCodeToFile()
 {
+    log("start print\n");
     if (codeList == NULL)
     {
-        printf("intermediate code unvailable\n");
+        log("intermediate code unvailable\n");
         exit(1);
     }
     FILE *fp;
     if ((fp = fopen("test.inter", "w")) == NULL)
     {
-        printf("file cannot open \n");
+        log("file cannot open \n");
         exit(1);
     }
     else
     {
-        printf("file opened for writing \n");
+        log("file opened for writing \n");
     }
 
     CodeNodeP current = codeList;
@@ -69,7 +70,7 @@ void printCodeToFile()
             fprintf(fp, "FUNCTION %s :\n", current->result);
             break;
         case OP_ASSIGN:
-            fprintf(fp, "%s := %s\n", current->opn1, current->result);
+            fprintf(fp, "%s := %s\n", current->result, current->opn1);
             break;
         case OP_PLUS:
             fprintf(fp, "%s := %s + %s\n", current->result, current->opn1, current->opn2);
@@ -117,16 +118,17 @@ void printCodeToFile()
             fprintf(fp, "IF %s != %s GOTO %s\n", current->opn1, current->opn2, current->result);
             break;
         }
+        current = current->next;
     }
 
     if (fclose(fp) != 0)
     {
-        printf("file cannot be closed \n");
+        log("file cannot be closed \n");
         exit(1);
     }
     else
     {
-        printf("print finished\n");
+        log("print finished\n");
     }
     return 0;
 }
@@ -143,30 +145,44 @@ void addToList(CodeNodeP temp)
     {
         codeList = currentCode = temp;
     }
+    while(currentCode->next != NULL) {
+        currentCode = currentCode->next;
+    }
 }
 
 CodeNodeP getCode(enum Operation op, char opn1[], char opn2[], char result[])
 {
     CodeNodeP temp = (CodeNodeP)malloc(sizeof(struct CodeNode));
     temp->op = op;
-    strcpy(temp->opn1, opn1);
-    strcpy(temp->opn2, opn2);
-    strcpy(temp->result, result);
+    if (opn1 != NULL)
+    {
+        strcpy(temp->opn1, opn1);
+    }
+    if (opn2 != NULL)
+    {
+        strcpy(temp->opn2, opn2);
+    }
+    if (result != NULL)
+    {
+        strcpy(temp->result, result);
+    }
     temp->next = NULL;
     temp->pre = NULL;
 }
 
-
-char* intToStr(int num)
+char *intToStr(int num)
 {
     int len = getIntLen(num);
-    char* tempStr = (char*)malloc(sizeof(char) * (len+1));
-    tempStr[0]='#';
-    while(num > 0) {
-        tempStr[len]=num%10 + '0';
-        num/=10;
-        len--;
+    char *tempStr = (char *)malloc(sizeof(char) * (len + 2));
+    tempStr[0] = '#';
+    int i = len;
+    while (num > 0)
+    {
+        tempStr[i] = num % 10 + '0';
+        num /= 10;
+        i--;
     }
+    tempStr[len+1]='\0';
     return tempStr;
 }
 
@@ -175,7 +191,7 @@ char *newTemp()
     temp_index++;
     int len = getIntLen(temp_index);
     char *temp = (char *)malloc(sizeof(char) * (1 + len + 1));
-    temp[0] = 'V';
+    temp[0] = 't';
     int index = temp_index;
     for (int i = len; i >= 1; i--)
     {
@@ -209,7 +225,8 @@ char *newLabel()
 //1-preffix ,0-suffix, -1-not exist
 int isIncOrDecExist(PEXP exp)
 {
-    if(exp == NULL) {
+    if (exp == NULL)
+    {
         return -1;
     }
     switch (exp->kind)
@@ -226,15 +243,19 @@ int isIncOrDecExist(PEXP exp)
     case STAR_NODE:
     case DIV_NODE:
     case UMINUS_NODE:
-        if(exp->ptr.pExp1 != NULL) {
+        if (exp->ptr.pExp1 != NULL)
+        {
             int result;
-            if((result=isIncOrDecExist(exp->ptr.pExp1)) != -1) {
+            if ((result = isIncOrDecExist(exp->ptr.pExp1)) != -1)
+            {
                 return result;
             }
         }
-        if(exp->ptr.pExp2 != NULL) {
+        if (exp->ptr.pExp2 != NULL)
+        {
             int result;
-            if((result=isIncOrDecExist(exp->ptr.pExp2)) != -1) {
+            if ((result = isIncOrDecExist(exp->ptr.pExp2)) != -1)
+            {
                 return result;
             }
         }
@@ -242,6 +263,16 @@ int isIncOrDecExist(PEXP exp)
     default:
         return -1;
     }
+}
+
+CodeNodeP mergeCode(CodeNodeP p1, CodeNodeP p2)
+{
+    CodeNodeP current = p1;
+    while(current->next != NULL) {
+        current = current -> next;
+    }
+    current->next=p2;
+    return p1;
 }
 
 CodeNodeP translateExp(PEXP exp, char place[])
@@ -255,114 +286,129 @@ CodeNodeP translateExp(PEXP exp, char place[])
     case INTEGER_NODE:
     {
         int value = exp->type_integer;
-        char* value_str = intToStr(value);
-        tempCode = getCode(OP_ASSIGN,place,NULL,value_str);
+        char *value_str = intToStr(value);
+        tempCode = getCode(OP_ASSIGN, value_str, NULL, place);
         break;
     }
     case ID_NODE:
     {
         char *alias = getVariableAlias(exp->id.type_id);
-        tempCode = getCode(OP_ASSIGN,place,NULL,alias);
+        tempCode = getCode(OP_ASSIGN, alias, NULL, place);
         break;
     }
     case ASSIGN_NODE:
     {
         char *alias = getVariableAlias((exp->ptr.pExp1)->id.type_id);
+        log(alias);
         char *t1 = newTemp();
-        tempCode = translateExp(exp->ptr.pExp2,t1);
-        tempCode->next = getCode(OP_ASSIGN,t1,NULL,alias);
+        CodeNodeP p1, p2;
+        p1 = translateExp(exp->ptr.pExp2, t1);
+        p2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        tempCode = mergeCode(p1,p2);
         break;
     }
     case PLUS_NODE:
     {
         char *t1 = newTemp();
         char *t2 = newTemp();
-        CodeNodeP first,next;
-        if(isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1) {
-            first = translateExp(exp->ptr.pExp2,t1);
-            next = translateExp(exp->ptr.pExp1,t2);
-        }   else {
-            first = translateExp(exp->ptr.pExp1,t1);
-            next = translateExp(exp->ptr.pExp2,t2);
+        CodeNodeP first, next, third;
+        if (isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1)
+        {
+            first = translateExp(exp->ptr.pExp2, t1);
+            next = translateExp(exp->ptr.pExp1, t2);
         }
-        tempCode = first;
-        tempCode->next = next; 
-        (tempCode->next)->next=getCode(OP_PLUS,t1,t2,place);
+        else
+        {
+            first = translateExp(exp->ptr.pExp1, t1);
+            next = translateExp(exp->ptr.pExp2, t2);
+        }
+        tempCode = mergeCode(first,next);
+        third = getCode(OP_PLUS, t1, t2, place);
+        tempCode = mergeCode(tempCode, third);
         break;
     }
     case MINUS_NODE:
     {
         char *t1 = newTemp();
         char *t2 = newTemp();
-        CodeNodeP first,next;
-        if(isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1) {
-            first = translateExp(exp->ptr.pExp2,t1);
-            next = translateExp(exp->ptr.pExp1,t2);
-        }   else {
-            first = translateExp(exp->ptr.pExp1,t1);
-            next = translateExp(exp->ptr.pExp2,t2);
+        CodeNodeP first, next, third;
+        if (isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1)
+        {
+            first = translateExp(exp->ptr.pExp2, t1);
+            next = translateExp(exp->ptr.pExp1, t2);
         }
-        tempCode = first;
-        tempCode->next = next; 
-        (tempCode->next)->next=getCode(OP_MINUS,t1,t2,place);
+        else
+        {
+            first = translateExp(exp->ptr.pExp1, t1);
+            next = translateExp(exp->ptr.pExp2, t2);
+        }
+        tempCode = mergeCode(first,next);
+        third = getCode(OP_MINUS, t1, t2, place);
+        tempCode = mergeCode(tempCode, third);
         break;
     }
     case STAR_NODE:
     {
         char *t1 = newTemp();
         char *t2 = newTemp();
-        CodeNodeP first,next;
-        if(isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1) {
-            first = translateExp(exp->ptr.pExp2,t1);
-            next = translateExp(exp->ptr.pExp1,t2);
-        }   else {
-            first = translateExp(exp->ptr.pExp1,t1);
-            next = translateExp(exp->ptr.pExp2,t2);
+        CodeNodeP first, next, third;
+        if (isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1)
+        {
+            first = translateExp(exp->ptr.pExp2, t1);
+            next = translateExp(exp->ptr.pExp1, t2);
         }
-        tempCode = first;
-        tempCode->next = next; 
-        (tempCode->next)->next=getCode(OP_STAR,t1,t2,place);
+        else
+        {
+            first = translateExp(exp->ptr.pExp1, t1);
+            next = translateExp(exp->ptr.pExp2, t2);
+        }
+        tempCode = mergeCode(first,next);
+        third = getCode(OP_STAR, t1, t2, place);
+        tempCode = mergeCode(tempCode, third);
         break;
     }
     case DIV_NODE:
     {
         char *t1 = newTemp();
         char *t2 = newTemp();
-        CodeNodeP first,next;
-        if(isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1) {
-            first = translateExp(exp->ptr.pExp2,t1);
-            next = translateExp(exp->ptr.pExp1,t2);
-        }   else {
-            first = translateExp(exp->ptr.pExp1,t1);
-            next = translateExp(exp->ptr.pExp2,t2);
+        CodeNodeP first, next, third;
+        if (isIncOrDecExist(exp->ptr.pExp1) == 0 || isIncOrDecExist(exp->ptr.pExp2) == 1)
+        {
+            first = translateExp(exp->ptr.pExp2, t1);
+            next = translateExp(exp->ptr.pExp1, t2);
         }
-        tempCode = first;
-        tempCode->next = next; 
-        (tempCode->next)->next=getCode(OP_DIV,t1,t2,place);
+        else
+        {
+            first = translateExp(exp->ptr.pExp1, t1);
+            next = translateExp(exp->ptr.pExp2, t2);
+        }
+        tempCode = mergeCode(first,next);
+        third = getCode(OP_DIV, t1, t2, place);
+        tempCode = mergeCode(tempCode, third);
         break;
     }
 
     case UMINUS_NODE:
     {
         char *t1 = newTemp();
-        tempCode = translateExp(exp->ptr.pExp1,t1);
-        tempCode->next=getCode(OP_MINUS,zero,t1,place);
+        tempCode = translateExp(exp->ptr.pExp1, t1);
+        tempCode->next = getCode(OP_MINUS, zero, t1, place);
         break;
     }
     case INC_PREFIX_NODE:
     case INC_SUFFIX_NODE:
     {
         char *t1 = newTemp;
-        tempCode = getCode(OP_PLUS,exp->ptr.pExp1,one,t1);
-        tempCode->next = getCode(OP_ASSIGN,t1,NULL,place);
+        tempCode = getCode(OP_PLUS, exp->ptr.pExp1, one, t1);
+        tempCode->next = getCode(OP_ASSIGN, t1, NULL, place);
         break;
     }
     case DEC_SUFFIX_NODE:
     case DEC_PREFIX_NODE:
     {
         char *t1 = newTemp;
-        tempCode = getCode(OP_MINUS,exp->ptr.pExp1,one,t1);
-        tempCode->next = getCode(OP_ASSIGN,t1,NULL,place);
+        tempCode = getCode(OP_MINUS, exp->ptr.pExp1, one, t1);
+        tempCode->next = getCode(OP_ASSIGN, t1, NULL, place);
         break;
     }
     }
@@ -371,12 +417,11 @@ CodeNodeP translateExp(PEXP exp, char place[])
 
 CodeNodeP translateCond(PEXP exp, char label_true, char label_false)
 {
-
 }
 
 CodeNodeP translateStmt(PEXP exp)
 {
-    log("start translate stmt");
+    log("start translate stmt\n");
     CodeNodeP tempCode;
     switch (exp->kind)
     {
@@ -392,7 +437,7 @@ CodeNodeP translateStmt(PEXP exp)
     case INC_SUFFIX_NODE:
     case DEC_SUFFIX_NODE:
     case DEC_PREFIX_NODE:
-        tempCode = translateExp(exp,NULL);
+        tempCode = translateExp(exp, NULL);
         addToList(tempCode);
         break;
     }

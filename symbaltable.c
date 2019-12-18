@@ -7,6 +7,7 @@ extern int getIntLen(int );
 extern int offset[5];
 extern int exp2;
 extern int exp3;
+extern void log(char* );
 
 enum SymbalType{TYPE_INT,TYPE_FLOAT,TYPE_CHAR,TYPE_VOID};
 enum FlagType{FLAG_F,FLAG_P,FLAG_V};
@@ -27,7 +28,7 @@ char* getNewAlias()
 	v_index++;
 	int len = getIntLen(v_index);
 	char *noVal = (char*)malloc(sizeof(char)*(1+len+1));
-	noVal[0]='V';
+	noVal[0]='v';
 	int temp = v_index;
 	for(int i = len; i >= 1; i--) {
 		noVal[i]=temp%10+'0';
@@ -63,7 +64,7 @@ char* getVariableAlias(char id[])
 	int current = index;
 	while(current>=0) {
 		current--;
-		if(strcmp(table[current]->alias,id)==0) {
+		if(strcmp(table[current]->name,id)==0) {
 			return table[current]->alias;
 		}
 	}
@@ -205,7 +206,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExist(name,level,line,FLAG_F);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
+					printf("ÐÐºÅ£º%d  º¯ÊýÎ´¶¨Òå%s\n",line,name);
 					getchar();
 				}
 				return 1;
@@ -214,7 +215,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExpType(type,T->fire.valueList);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í²ï¿½Æ¥ï¿½ï¿½\n",line);
+					printf("ÐÐºÅ£º%d  º¯Êýµ÷ÓÃ²ÎÊýÀàÐÍ²»Æ¥Åä\n",line);
 					getchar();
 				}
 			}
@@ -229,7 +230,7 @@ int checkTable(PEXP T,int level,int line)
 			}
 			if(result) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  continueï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½\n",line);
+					printf("ÐÐºÅ£º%d  continue²»ÔÚÑ­»·ÄÚ\n",line);
 					getchar();
 				}
 			}	else {
@@ -244,7 +245,7 @@ int checkTable(PEXP T,int level,int line)
 			}
 			if(result) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  breakï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½\n",line);
+					printf("ÐÐºÅ£º%d  break²»ÔÚÑ­»·ÄÚ\n",line);
 					getchar();
 				}
 			}	
@@ -255,7 +256,7 @@ int checkTable(PEXP T,int level,int line)
 				return 0;
 			} else {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  elseï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ifÖ®ï¿½ï¿½\n",line);
+					printf("else²»¸úÔÚifÖ®ºó  ÐÐºÅ%d \n",line);
 					getchar();
 				}
 				return 1;
@@ -264,7 +265,7 @@ int checkTable(PEXP T,int level,int line)
 		case RETURN_NODE:
 			if(level==0) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½return\n",line);
+					printf("ÔÚº¯ÊýÍâÊ¹ÓÃreturn ÐÐºÅ£º%d \n",line);
 					getchar();
 				}
 				return 1;
@@ -276,7 +277,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExist(name,level,line,FLAG_V);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
+					printf("±äÁ¿Î´¶¨Òå  ÐÐºÅ %d  ±äÁ¿Ãû£º%s\n",line,name);
 					getchar();
 				}
 			} 
@@ -294,7 +295,7 @@ int checkTable(PEXP T,int level,int line)
 			result = _checkExpType(type,T->ptr.pExp2);
 			if(result) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½Öµï¿½ï¿½ï¿½Í²ï¿½Æ¥ï¿½ï¿½\n",line);
+					printf("ÀàÐÍ²»Æ¥Åä£¬ÐÐºÅ£º%d\n",line);
 					getchar();
 				}
 			}
@@ -397,7 +398,7 @@ int _checkExist(char target[],int level,int line,enum FlagType flag)
 
 void displayTable()
 {
-	printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½\tÆ«ï¿½ï¿½ï¿½ï¿½\n");
+	printf("±äÁ¿Ãû\t±ðÃû\t²ãºÅ\tÀàÐÍ\t±ê¼ÇtÆ«ÒÆÁ¿\n");
 	for(int i = 0; i < index; i++) {
 		printf("%s\t%s\t%d\t",table[i]->name,table[i]->alias,table[i]->level);
 		switch(table[i]->type) {

@@ -1,4 +1,4 @@
-
+#include <stdio.h>
 
 int getIntLen(int num)
 {
@@ -13,7 +13,7 @@ int getIntLen(int num)
     return val;
 }
 
-void log(char *msg) {
+void log(char msg[]) {
     char log_enable = 1;
     if(log_enable) {
         printf("%s\n", msg);

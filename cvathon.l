@@ -62,8 +62,8 @@ return		{return RETURN;}
 [>]		   {addWord(GREATER_ARRAY,yytext);return GREATER;}
 [<]		   {addWord(LESS_ARRAY,yytext);return LESS;}
 .          {printf("error in line %d\n",yylineno);}
-<<EOF>>	   {if(exp1&&showWordArray) {displayMessage(2,0);displayWordsArray(array);}yyterminate();
-			if(exp3) {printCodeToFile();}}
+<<EOF>>	   {if(exp1&&showWordArray) {displayMessage(2,0);displayWordsArray(array);}
+			if(exp3) {printCodeToFile();}yyterminate();}
 %%
 /*
 int main()
