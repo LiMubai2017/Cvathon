@@ -44,6 +44,7 @@ return		{return RETURN;}
 "--"	   {addWord(DEC_ARRAY,yytext);return DEC;}
 "||"	   {return OR;}
 "&&"	   {return AND;}
+"!"		   {return NOT;}
 [=]        {addWord(ASSIGNOP_ARRAY,yytext);return ASSIGNOP;}
 [+]        {addWord(PLUS_ARRAY,yytext);return PLUS;}
 [-]        {addWord(MINUS_ARRAY,yytext);return MINUS;}

@@ -23,7 +23,9 @@ void displayMessage(int index, int indent)
 
 void display(PEXP T,int indent)
 {
-	
+	if(T == NULL) {
+		return ;
+	}
 	switch (T->kind) {
 		case IF_NODE:
 			printf("%*cIFÓï¾ä:\n",indent,' ');
@@ -207,6 +209,9 @@ void display(PEXP T,int indent)
 						break;
 					case LINK_OR:
 						printf("%*cOR:\n",indent,' ');
+						break;
+					case LINK_NOT:
+						printf("%*cNOT:\n",indent,' ');
 						break;
 				}
 				display(T->condition_list.pExp1,indent+blanks);

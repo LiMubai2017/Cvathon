@@ -4,11 +4,12 @@ enum node_kind {ID_NODE,INTEGER_NODE,LPRP_NODE,PLUS_NODE,MINUS_NODE,STAR_NODE,DI
 				IF_NODE,ELSE_NODE,CONTINUE_NODE,BREAK_NODE,WHILE_NODE,RETURN_NODE,
 				GREATER_NODE,LESS_NODE,EQUAL_NODE,GREATER_EQUAL_NODE,LESS_EQUAL_NODE,
 				ID_ARRAY_NODE,FOR_NODE,FUNCTION_DECLARE_NODE,FUNCTION_FIRE_NODE,
-				VALUE_LIST_NODE,CONDITION_LIST_NODE};
+				VALUE_LIST_NODE,CONDITION_LIST_NODE,FUNCTION_PARAM_NODE};
 enum function_type {INT_FUNCTION,CHAR_FUNCTION,FLOAT_FUNCTION,VOID_FUNCTION};
 enum return_type {RETURN_VOID,RETURN_EXP};
-enum link_type {LINK_AND,LINK_OR};
+enum link_type {LINK_AND,LINK_OR,LINK_NOT};
 enum BlockType{IF_BLOCK,WHILE_BLOCK,FOR_BLOCK,FUNCTION_BLOCK,OTHER_BLOCK};
+enum ParamType{INT_PARAM,CHAR_PARAM,FLOAT_PARAM};
 typedef struct Exp {
 	enum node_kind kind;
 	union {
@@ -17,6 +18,11 @@ typedef struct Exp {
 			enum function_type returnType;
 			struct Exp *pExp;
 		}function;
+		struct {
+			char param_name[33];
+			enum ParamType param_type;
+			struct Exp *pExp;
+		}function_param;
 		struct {
 			char fire_id[33]; 
 			struct Exp *valueList;

@@ -18,6 +18,7 @@ typedef struct Symbal{
 	enum SymbalType type;
 	char flag;
 	int offset;
+	PEXP function_param;
 }*SymbalP;
 int index=0;
 SymbalP table[100];
@@ -38,8 +39,40 @@ char* getNewAlias()
 	return noVal;
 }
 
+void addReadAndWriteFunction()
+{
+	SymbalP readFunction = (SymbalP)malloc(sizeof(struct Symbal));
+	SymbalP writeFunction = (SymbalP)malloc(sizeof(struct Symbal));
+	strcpy(readFunction->name , "read");
+	strcpy(readFunction->alias,"");
+	readFunction->level = 0;
+	readFunction->type = TYPE_INT;
+	readFunction->flag = FLAG_F;
+	readFunction->offset = 0;
+	readFunction->function_param=NULL;
+
+	strcpy(writeFunction->name , "write");
+	strcpy(writeFunction->alias,"");
+	writeFunction->level = 0;
+	writeFunction->type = TYPE_VOID;
+	writeFunction->flag = FLAG_F;
+	writeFunction->offset = 0;
+	PEXP param_node = (PEXP)malloc(sizeof(struct Exp));
+	strcpy(param_node->function_param.param_name,"num");
+	param_node->function_param.param_type=INT_PARAM;
+	param_node->function_param.pExp=NULL;
+	writeFunction->function_param=param_node;
+
+	table[index++]=readFunction;
+	table[index++]=writeFunction;
+}
+
 void push(SymbalP newOne)
 {
+	if(index == 0) {
+		addReadAndWriteFunction();
+	}
+
 	table[index++]=newOne;
 	if(exp2) {
 		displayTable();
@@ -114,6 +147,7 @@ int insertIntoTable(PEXP T,int level,int line)
 				}
 				current->flag=FLAG_F;
 				current->offset=offset[level];
+				current->function_param=T->function_param.pExp;
 				push(current);
 				if(T->function.returnType!=VOID_FUNCTION && T->function.pExp!=NULL) {
 					insertIntoTable(T->function.pExp,level+1,line);
@@ -398,7 +432,7 @@ int _checkExist(char target[],int level,int line,enum FlagType flag)
 
 void displayTable()
 {
-	printf("变量名\t别名\t层号\t类型\t标记t偏移量\n");
+	printf("变量名\t别名\t层号\t类型\t标记\t偏移量\n");
 	for(int i = 0; i < index; i++) {
 		printf("%s\t%s\t%d\t",table[i]->name,table[i]->alias,table[i]->level);
 		switch(table[i]->type) {
@@ -410,6 +444,9 @@ void displayTable()
 				break;
 			case TYPE_CHAR:
 				printf("char\t");
+				break;
+			case TYPE_VOID:
+				printf("void\t");
 				break;
 		}
 		switch(table[i]->flag) {
