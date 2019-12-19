@@ -13,6 +13,23 @@ int getIntLen(int num)
     return val;
 }
 
+void insertStrIntoArray(char *a, char **array)
+{
+    if(array[0] == NULL) {
+        array[0] = a;
+    }   else {
+        int index=0;
+        while(array[index] != NULL) {
+            index++;
+        }
+        while(index > 0) {
+            array[index] = array[index-1];
+            index--;
+        }
+        array[0]=a;
+    }
+}
+
 void log(char msg[]) {
     char log_enable = 1;
     if(log_enable) {

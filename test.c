@@ -10,5 +10,5 @@ if(a<10)
 }
 else
 {
-    b=4
+    write(b)
 }

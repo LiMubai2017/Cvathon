@@ -57,7 +57,8 @@ line : '\n'    { ;}
 					blockTypes[nestCodeBlock]=FUNCTION_BLOCK;}}
 	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
 						if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
-						blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+						blockTypes[nestCodeBlock]=OTHER_BLOCK;}
+						if(exp3) {translateStmt($1);}}
 	 | declare '\n' %prec DECLARE_PRI {if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2 || exp3) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}

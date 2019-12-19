@@ -5,9 +5,6 @@ extern int getIntLen(int);
 extern void log(char *);
 extern int nestCodeBlock;
 
-int temp_index = 0;
-int label_index = 0;
-
 enum Operation
 {
     OP_LABEL,
@@ -27,7 +24,9 @@ enum Operation
     OP_GE,
     OP_LE,
     OP_EQUAL,
-    OP_UE
+    OP_UE,
+    OP_READ,
+    OP_WRITE,
 };
 
 typedef struct CodeNode
@@ -36,6 +35,12 @@ typedef struct CodeNode
     char opn1[10], opn2[10], result[10];
     struct CodeNode *next, *pre;
 } * CodeNodeP;
+
+void insertStrIntoArray(char*, char**);
+CodeNodeP translateExp(PEXP exp, char place[]);
+
+int temp_index = 0;
+int label_index = 0;
 
 CodeNodeP codeList[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
 CodeNodeP currentCode[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
@@ -118,6 +123,12 @@ void printCodeToFile()
             break;
         case OP_UE:
             fprintf(fp, "IF %s != %s GOTO %s\n", current->opn1, current->opn2, current->result);
+            break;
+        case OP_READ:
+            fprintf(fp, "READ %s\n", current->result);
+            break;
+        case OP_WRITE:
+            fprintf(fp, "WRITE %s\n", current->result);
             break;
         }
         current = current->next;
@@ -291,6 +302,44 @@ CodeNodeP mergeCode(CodeNodeP p1, CodeNodeP p2)
     return p1;
 }
 
+CodeNodeP translateArgs(PEXP arg_node, char **arg_list)
+{
+    switch (arg_node->kind)
+    {
+    case VALUE_LIST_NODE:
+    {
+        char *t1 = newTemp();
+        CodeNodeP code1 = translateExp(arg_node->ptr.pExp1,t1);
+        insertStrIntoArray(t1 , arg_list);
+        if(arg_node->ptr.pExp2 == NULL) {
+            return code1;
+        } else {
+            CodeNodeP code2 = translateArgs(arg_node->ptr.pExp2,arg_list);
+            return mergeCode(code1,code2);
+        }
+    }
+    case FUNCTION_FIRE_NODE:
+    case UMINUS_NODE:
+    case INC_PREFIX_NODE:
+    case DEC_PREFIX_NODE:
+    case INC_SUFFIX_NODE:
+    case DEC_SUFFIX_NODE:
+    case INTEGER_NODE:
+    case ID_NODE:
+    case PLUS_NODE:
+    case MINUS_NODE:
+    case STAR_NODE:
+    case DIV_NODE:
+    {
+        char *t1 = newTemp();
+        CodeNodeP code1 = translateExp(arg_node,t1);
+        insertStrIntoArray(t1 , arg_list);
+        return code1;
+    }
+    }
+    return NULL;
+}
+
 CodeNodeP translateExp(PEXP exp, char place[])
 {
     log("start translate exp");
@@ -426,9 +475,43 @@ CodeNodeP translateExp(PEXP exp, char place[])
         tempCode->next = getCode(OP_ASSIGN, t1, NULL, place);
         break;
     }
+    case FUNCTION_FIRE_NODE:
+    {
+        log("parse function fire\n");
+        char function[33];
+        strcpy(function, exp->fire.fire_id);
+        if(exp->fire.valueList==NULL) {
+            if(strcmp(function,"read")==0) {
+                tempCode = getCode(OP_READ,NULL,NULL,place);
+            } else {
+                tempCode = getCode(OP_CALL, function, NULL, place);
+            }
+        } else {
+            char **arg_list=(char**)malloc(sizeof(char*)*10);
+            for(int i = 0; i < 10; i++) {
+                arg_list[i] = NULL;
+            }
+            CodeNodeP code1 = translateArgs(exp->fire.valueList,arg_list);
+            if(strcmp(function,"write")==0) {
+                tempCode = mergeCode(code1,getCode(OP_WRITE,NULL,NULL,arg_list[0]));
+            } else {
+                CodeNodeP code2 = NULL;
+                int index=0;
+                while(arg_list[index] != NULL) {
+                    code2 = mergeCode(code2, getCode(OP_ARG,NULL,NULL,arg_list[index]));
+                    index++;
+                }
+                tempCode = mergeCode(code1, code2);
+                tempCode = mergeCode(tempCode, getCode(OP_CALL,NULL,NULL,function));
+            }
+        }
+        break;
+    }
+
     }
     return tempCode;
 }
+
 
 CodeNodeP translateCond(PEXP exp, char *label_true, char *label_false)
 {
@@ -554,6 +637,7 @@ CodeNodeP translateStmt(PEXP exp)
     case INC_SUFFIX_NODE:
     case DEC_SUFFIX_NODE:
     case DEC_PREFIX_NODE:
+    case FUNCTION_FIRE_NODE:
         tempCode = translateExp(exp, NULL);
         addToList(tempCode);
         break;

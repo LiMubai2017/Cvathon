@@ -92,6 +92,19 @@ void tableOut(int level)
 	}
 }
 
+PEXP getParamNode(char *function)
+{
+	int current = index;
+	while(current>=0) {
+		current--;
+		if(table[current]->flag==FLAG_F&&strcmp(table[current]->name,function)==0) {
+			return table[current]->function_param;
+		}
+	}
+	printf("unexpected error\n");
+	exit(1);
+}
+
 char* getVariableAlias(char id[])
 {
 	int current = index;
@@ -110,7 +123,7 @@ enum SymbalType _getVariableType(char target[])
 	int current = index;
 	while(current>=0) {
 		current--;
-		if(strcmp(table[current]->name,target)==0) {
+		if(strcmp(table[current]->name,target )==0) {
 			return table[current]->type;
 		}
 	}
@@ -245,16 +258,20 @@ int checkTable(PEXP T,int level,int line)
 				}
 				return 1;
 			} 
-			type=_getVariableType(name);
-			result = _checkExpType(type,T->fire.valueList);
+			PEXP paramNode = getParamNode(name);
+			if(paramNode != NULL) {
+				result = _checkParamType(paramNode,T->fire.valueList);
+			} else {
+				result = 0;
+			}
 			if(result) {
 				if(exp2 || exp3) {
 					printf("行号：%d  函数调用参数类型不匹配\n",line);
 					getchar();
 				}
 			}
+			log("check function fire finished\n");
 			return result;
-			break;
 		case CONTINUE_NODE:
 			result=1;
 			for(i=level-1;i>=0;i--) {
@@ -355,6 +372,14 @@ int checkTable(PEXP T,int level,int line)
 	return 1;
 }
 
+//1-error ; 0-no error
+int _checkParamType(PEXP paramNode, PEXP valueNode)
+{
+	PEXP p1 = paramNode;
+	PEXP p2 = valueNode;
+	
+	return 0;
+}
 
 //1-error ; 0-no error
 int _checkExpType(enum SymbalType type,PEXP T)
