@@ -1,14 +1,10 @@
-int a,b,c
-a=read()
-while(a<10)
+int test(int a)
 {
-    a=a+1
+    return a+1
 }
-if(a<10)
+int main()
 {
-    b=3
-}
-else
-{
-    write(b)
+    int n
+    n = test(n)
+    return 0
 }

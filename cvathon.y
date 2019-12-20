@@ -54,7 +54,8 @@ input:
 line : '\n'    { ;}
 	 | function '\n' %prec FUNCTION_PRI {if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2 || exp3) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
-					blockTypes[nestCodeBlock]=FUNCTION_BLOCK;}}
+					blockTypes[nestCodeBlock]=FUNCTION_BLOCK;}
+					if(exp3) {translateStmt($1);}}
 	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
 						if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 						blockTypes[nestCodeBlock]=OTHER_BLOCK;}
@@ -71,10 +72,10 @@ line : '\n'    { ;}
 				blockTypes[nestCodeBlock]=OTHER_BLOCK;}
 				if(exp3) {translateStmt($1);}}
 	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);}nestCodeBlock+=1;}
-	 | BRP '\n' {if(exp2 || exp3) {tableOut(nestCodeBlock);}
-	 			nestCodeBlock-=1;
-				if(exp2 || exp3){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}
-				if(exp3) parsePreCode();}
+	 | BRP '\n' {nestCodeBlock-=1;
+				if(exp3) parsePreCode();
+				if(exp2 || exp3) {tableOut(nestCodeBlock+1);}
+				if(exp2 || exp3){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}}
 	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2 || exp3) blockTypes[nestCodeBlock]=IF_BLOCK;
 					if(exp3) translateStmt($1);}
@@ -89,7 +90,8 @@ line : '\n'    { ;}
 					if(exp3) translateStmt($1);}
 	 | return_line '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
-					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
+					if(exp3) {translateStmt($1);}}
 	 | error '\n' { printf("line error!\n");}
 	 ;
 
@@ -100,12 +102,12 @@ function : VOID ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION
 		 | INT ID LP function_param RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
 		 | CHAR ID LP function_param RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
 		 | FLOAT ID LP function_param RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
-function_param : INT ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=INT_PARAM;$$->function_param.pExp=NULL;}
-		| CHAR ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=CHAR_PARAM;$$->function_param.pExp=NULL;}
-		| FLOAT ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=FLOAT_PARAM;$$->function_param.pExp=NULL;}
-		| INT ID ',' function_param {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=INT_PARAM;$$->function_param.pExp=$4;}
-		| CHAR ID ',' function_param {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=CHAR_PARAM;$$->function_param.pExp=$4;}
-		| FLOAT ID ',' function_param {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=FLOAT_PARAM;$$->function_param.pExp=$4;}
+function_param : INT ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=INT_PARAM;$$->function_param.pExp=NULL;strcpy($$->function_param.param_name, $2);}
+		| CHAR ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=CHAR_PARAM;$$->function_param.pExp=NULL;strcpy($$->function_param.param_name, $2);}
+		| FLOAT ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=FLOAT_PARAM;$$->function_param.pExp=NULL;strcpy($$->function_param.param_name, $2);}
+		| INT ID ',' function_param {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=INT_PARAM;$$->function_param.pExp=$4;strcpy($$->function_param.param_name, $2);}
+		| CHAR ID ',' function_param {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=CHAR_PARAM;$$->function_param.pExp=$4;strcpy($$->function_param.param_name, $2);}
+		| FLOAT ID ',' function_param {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_PARAM_NODE;$$->function_param.param_type=FLOAT_PARAM;$$->function_param.pExp=$4;strcpy($$->function_param.param_name, $2);}
 
 function_fire : ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.fire_id,$1);$$->fire.valueList=NULL;}
 			  | ID LP value_list RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_FIRE_NODE;strcpy($$->fire.fire_id,$1);$$->fire.valueList=$3;}

@@ -108,7 +108,7 @@ PEXP getParamNode(char *function)
 char* getVariableAlias(char id[])
 {
 	int current = index;
-	while(current>=0) {
+	while(current>0) {
 		current--;
 		if(strcmp(table[current]->name,id)==0) {
 			return table[current]->alias;
@@ -160,7 +160,7 @@ int insertIntoTable(PEXP T,int level,int line)
 				}
 				current->flag=FLAG_F;
 				current->offset=offset[level];
-				current->function_param=T->function_param.pExp;
+				current->function_param=T->function.pExp;
 				push(current);
 				if(T->function.returnType!=VOID_FUNCTION && T->function.pExp!=NULL) {
 					insertIntoTable(T->function.pExp,level+1,line);
@@ -182,6 +182,23 @@ int insertIntoTable(PEXP T,int level,int line)
 		case FLOAT_NODE:
 			return insertSub(T->ptr.pExp1,TYPE_FLOAT,level,line);
 			break;
+		case FUNCTION_PARAM_NODE:
+		{
+			PEXP current = T;
+			while(current != NULL) {
+				SymbalP tempSymbal = (SymbalP)malloc(sizeof(struct Symbal));
+				strcpy(tempSymbal->alias,getNewAlias());
+				strcpy(tempSymbal->name, current->function_param.param_name);
+				tempSymbal->type = current->function_param.param_type;
+				tempSymbal->level=level;
+				tempSymbal->flag=FLAG_V;
+				tempSymbal->offset=offset[level];
+				offset[level]+=4;
+				push(tempSymbal);
+				current = current->function_param.pExp;
+			}
+			break;
+		}
 	}
 }
 
@@ -266,11 +283,10 @@ int checkTable(PEXP T,int level,int line)
 			}
 			if(result) {
 				if(exp2 || exp3) {
-					printf("行号：%d  函数调用参数类型不匹配\n",line);
+					printf("行号：%d  函数调用参数类型或数量不匹配\n",line);
 					getchar();
 				}
 			}
-			log("check function fire finished\n");
 			return result;
 		case CONTINUE_NODE:
 			result=1;
@@ -377,7 +393,30 @@ int _checkParamType(PEXP paramNode, PEXP valueNode)
 {
 	PEXP p1 = paramNode;
 	PEXP p2 = valueNode;
-	
+	while(p1 != NULL && p2 != NULL) {
+		PEXP *value = p2->ptr.pExp1;
+		enum ParamType param_type = p1->function_param.param_type;
+		if(param_type == INT_PARAM) {
+			if(_checkExpType(TYPE_INT,value)) {
+				return 1;
+			}
+		}
+		if(param_type == CHAR_PARAM) {
+			if(_checkExpType(TYPE_CHAR,value)) {
+				return 1;
+			}
+		}
+		if(param_type == FLOAT_PARAM) {
+			if(_checkExpType(TYPE_FLOAT,value)) {
+				return 1;
+			}
+		}
+		p1=p1->function_param.pExp;
+		p2=p2->ptr.pExp2;
+	}
+	if(p1 != NULL || p2 != NULL) {
+		return 1;
+	}
 	return 0;
 }
 
@@ -446,7 +485,7 @@ int _checkDefine(char target[],int level,int line)
 int _checkExist(char target[],int level,int line,enum FlagType flag)
 {
 	int current = index;
-	while(current>0 && table[current-1]->level<=level) {
+	while(current>0) {
 		current--;
 		if(strcmp(table[current]->name,target)==0 && table[current]->flag==flag) {
 			return 0;

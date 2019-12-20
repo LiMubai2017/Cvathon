@@ -193,7 +193,7 @@ char *intToStr(int num)
     char *tempStr = (char *)malloc(sizeof(char) * (len + 2));
     tempStr[0] = '#';
     int i = len;
-    while (num > 0)
+    while (i > 0)
     {
         tempStr[i] = num % 10 + '0';
         num /= 10;
@@ -383,7 +383,9 @@ CodeNodeP translateExp(PEXP exp, char place[])
         }
         else
         {
+            log("parse plus left\n");
             first = translateExp(exp->ptr.pExp1, t1);
+            log("parse plus right\n");
             next = translateExp(exp->ptr.pExp2, t2);
         }
         tempCode = mergeCode(first, next);
@@ -502,7 +504,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
                     index++;
                 }
                 tempCode = mergeCode(code1, code2);
-                tempCode = mergeCode(tempCode, getCode(OP_CALL,NULL,NULL,function));
+                tempCode = mergeCode(tempCode, getCode(OP_CALL,function,NULL,place));
             }
         }
         break;
@@ -643,6 +645,7 @@ CodeNodeP translateStmt(PEXP exp)
         break;
     case RETURN_NODE:
     {
+        log("found return\n");
         switch (exp->return_exp.returnType)
         {
         case RETURN_VOID:
@@ -651,12 +654,16 @@ CodeNodeP translateStmt(PEXP exp)
         case RETURN_EXP:
         {
             char *t1 = newTemp();
+            log("translate return exp\n");
             CodeNodeP code1 = translateExp(exp->return_exp.pExp, t1);
+            log("label1\n");
             CodeNodeP code2 = getCode(OP_RETURN, NULL, NULL, t1);
             tempCode = mergeCode(code1, code2);
             break;
         }
         }
+        log("finish parse return\n");
+        addToList(tempCode);
         break;
     }
     case IF_NODE:
@@ -671,6 +678,10 @@ CodeNodeP translateStmt(PEXP exp)
     case FOR_NODE:
         nodeToParse[nestCodeBlock] = exp;
         break;
+    case FUNCTION_DECLARE_NODE:
+        log("found function declare\n");
+        nodeToParse[nestCodeBlock] = exp;
+        break;
     }
 
     return tempCode;
@@ -678,6 +689,7 @@ CodeNodeP translateStmt(PEXP exp)
 
 void parsePreCode()
 {
+    log("start parse pre code\n");
     if (nodeToParse[nestCodeBlock] == NULL)
     {
         return;
@@ -747,6 +759,27 @@ void parsePreCode()
         tempCode = mergeCode(tempCode, code2);
         tempCode = mergeCode(tempCode, code_goto);
         tempCode = mergeCode(tempCode, code_label3);
+        addToList(tempCode);
+        break;
+    }
+    case FUNCTION_DECLARE_NODE:
+    {
+        log("parse function declare\n");
+        PEXP function_node = nodeToParse[nestCodeBlock];
+        CodeNodeP code1 = NULL;
+        CodeNodeP code2 = codeList[nestCodeBlock+1];
+        char *function = function_node->function.function_name;
+        CodeNodeP function_code = getCode(OP_FUNCTION, NULL, NULL, function);
+        PEXP param_list = function_node->function.pExp;
+        while(param_list != NULL) {
+            char *param = param_list->function_param.param_name;
+            char *alias = getVariableAlias(param);
+            CodeNodeP *param_code = getCode(OP_PARAM,NULL,NULL,alias);
+            code1 = mergeCode(code1 , param_code);
+            param_list = param_list->function_param.pExp;
+        }
+        tempCode = mergeCode(function_code , code1);
+        tempCode = mergeCode(tempCode , code2);
         addToList(tempCode);
         break;
     }
