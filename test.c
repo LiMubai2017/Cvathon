@@ -4,6 +4,7 @@ int test(int a)
 }
 int main()
 {
-    int n[3][4][3]
+    int n[3][4][3],b
+    n[0][1][2] = test(n[0][0][0])
     return 0
 }

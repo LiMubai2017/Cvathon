@@ -11,7 +11,7 @@ extern void log(char* );
 
 enum SymbalType{TYPE_INT,TYPE_FLOAT,TYPE_CHAR,TYPE_VOID,
 				TYPE_INT_ARRAY,TYPE_FLOAT_ARRAY,TYPE_CHAR_ARRAY};
-enum FlagType{FLAG_F,FLAG_P,FLAG_V};
+enum FlagType{FLAG_F,FLAG_P,FLAG_V,FLAG_ARRAY};
 typedef struct Symbal{
 	char name[30];
 	char alias[10];
@@ -94,6 +94,19 @@ void tableOut(int level)
 	}
 }
 
+PEXP getArrayNode(char *array)
+{
+	int current = index;
+	while(current>=0) {
+		current--;
+		if(strcmp(table[current]->name,array)==0) {
+			return table[current]->array_node;
+		}
+	}
+	printf("unexpected error\n");
+	exit(1);
+}
+
 PEXP getParamNode(char *function)
 {
 	int current = index;
@@ -170,7 +183,7 @@ int insertIntoTable(PEXP T,int level,int line)
 				return 1;
 			} else {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
+					printf("ÐÐºÅ£º%d  º¯ÊýÃûÉùÃ÷³åÍ»%s\n",line,name);
 				}
 				return 0;
 			}
@@ -269,7 +282,7 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 			strcpy(current->alias,getNewAlias());
 			current->level=level;
 			current->type=array_type;
-			current->flag=FLAG_V;
+			current->flag=FLAG_ARRAY;
 			current->array_node=T;
 			current->offset=offset[level];
 			int wholesize = 0;
@@ -389,6 +402,35 @@ int checkTable(PEXP T,int level,int line)
 			} 
 			return result;
 			break;
+		case ARRAY_NODE:
+		{
+			name = T->array.array_id;
+			result = _checkExist(name,level,line,FLAG_ARRAY);
+			if(result) {
+				printf("Êý×é±äÁ¿Î´¶¨Òå ÐÐºÅ£º%d",line);
+				getchar();
+				return 1;
+			}
+			log("label0");
+			if(!result && T->array.dimension >= 1 && _checkExpType(TYPE_INT , T->array.pExp1)) {
+				result = 1;
+			}
+			log("label1");
+			if(!result && T->array.dimension >= 2 && _checkExpType(TYPE_INT , T->array.pExp2)) {
+				result = 1;
+			}
+			log("label2");
+			if(!result && T->array.dimension == 3 && _checkExpType(TYPE_INT , T->array.pExp3)) {
+				result = 1;
+			}
+			log("label3");
+			if(result && (exp2 || exp3)) {
+				printf("Êý×éÏÂ±ê²»ÎªÕûÐÎ ÐÐºÅ£º%d\n",line);
+				getchar();
+			}
+			return result;
+			break;
+		}
 		case ASSIGN_NODE:
 			result = checkTable(T->ptr.pExp1,level,line);
 			if(!result) {
@@ -459,20 +501,47 @@ int _checkParamType(PEXP paramNode, PEXP valueNode)
 	return 0;
 }
 
+//1- match ; 0- error
+int _checkAssignType(enum SymbalType type1,enum SymbalType type2)
+{
+	if((type1 == TYPE_INT_ARRAY && type2 == TYPE_INT)
+	 ||(type1 == TYPE_INT && type2 == TYPE_INT_ARRAY)
+	 ||(type1 == TYPE_CHAR_ARRAY && type2 == TYPE_CHAR)
+	 ||(type1 == TYPE_CHAR && type2 == TYPE_CHAR_ARRAY)
+	 ||(type1 == TYPE_FLOAT && type2 == TYPE_FLOAT_ARRAY)
+	 ||(type1 == TYPE_FLOAT_ARRAY && type2 == TYPE_FLOAT)
+	 ) return 1;
+	if(type1 == type2) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 //1-error ; 0-no error
 int _checkExpType(enum SymbalType type,PEXP T)
 {
+	if(T == NULL) return 1;
 	switch(T->kind) {
 		case VALUE_LIST_NODE:
 			return _checkExpType(type,T->ptr.pExp1);
 			break;
 		case INTEGER_NODE:
-			if(type == TYPE_INT) {
+			if(_checkAssignType(type,TYPE_INT)) {
 				return 0;
 			} else {
 				return 1;
 			}
 			break;
+		case ARRAY_NODE:
+		{
+			enum SymbalType array_type = _getVariableType(T->array.array_id);
+			if(_checkAssignType(array_type , type)) {
+				return 0;
+			} else {
+				return 1;
+			}
+		}
 		case PLUS_NODE:
 		case STAR_NODE:
 		case MINUS_NODE:
@@ -484,14 +553,14 @@ int _checkExpType(enum SymbalType type,PEXP T)
 			}
 			break;
 		case ID_NODE:
-			if(_getVariableType(T->id.type_id) == type) {
+			if(_checkAssignType(_getVariableType(T->id.type_id),type)) {
 				return 0;
 			}	else {
 				return 1;
 			}
 			break;
 		case FUNCTION_FIRE_NODE:
-			if(_getVariableType(T->id.type_id) == type) {
+			if(_checkAssignType(_getVariableType(T->fire.fire_id),type)) {
 				return 0;
 			}	else {
 				return 1;
@@ -524,6 +593,10 @@ int _checkDefine(char target[],int level,int line)
 int _checkExist(char target[],int level,int line,enum FlagType flag)
 {
 	int current = index;
+	if(target == NULL) {
+		printf("target is NULL\n");
+		exit(1);
+	}
 	while(current>0) {
 		current--;
 		if(strcmp(table[current]->name,target)==0 && table[current]->flag==flag) {
@@ -570,6 +643,9 @@ void displayTable()
 				break;
 			case FLAG_P:
 				printf("P\t");
+				break;
+			case FLAG_ARRAY:
+				printf("ARRAY\t");
 				break;
 		}
 		printf("%d\n",table[i]->offset);

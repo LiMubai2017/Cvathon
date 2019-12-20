@@ -4,7 +4,7 @@ enum node_kind {ID_NODE,INTEGER_NODE,LPRP_NODE,PLUS_NODE,MINUS_NODE,STAR_NODE,DI
 				IF_NODE,ELSE_NODE,CONTINUE_NODE,BREAK_NODE,WHILE_NODE,RETURN_NODE,
 				GREATER_NODE,LESS_NODE,EQUAL_NODE,GREATER_EQUAL_NODE,LESS_EQUAL_NODE,
 				ID_ARRAY_NODE,FOR_NODE,FUNCTION_DECLARE_NODE,FUNCTION_FIRE_NODE,
-				VALUE_LIST_NODE,CONDITION_LIST_NODE,FUNCTION_PARAM_NODE};
+				VALUE_LIST_NODE,CONDITION_LIST_NODE,FUNCTION_PARAM_NODE,ARRAY_NODE};
 enum function_type {INT_FUNCTION,CHAR_FUNCTION,FLOAT_FUNCTION,VOID_FUNCTION};
 enum return_type {RETURN_VOID,RETURN_EXP};
 enum link_type {LINK_AND,LINK_OR,LINK_NOT};
@@ -39,6 +39,13 @@ typedef struct Exp {
 			int index2;		
 			int index3;		
 		}id;
+		struct {
+			char array_id[33];             
+			int dimension;	
+			struct Exp *pExp1;		
+			struct Exp *pExp2;		
+			struct Exp *pExp3;		
+		}array;
 		int type_integer;            
 		struct {
 			struct Exp *pExp1;

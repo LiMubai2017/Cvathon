@@ -205,8 +205,29 @@ char *intToStr(int num)
         i--;
     }
     tempStr[len + 1] = '\0';
-    log(tempStr);
     return tempStr;
+}
+
+char* getAdr(char *temp)
+{
+    int len = strlen(temp);
+    char *rst = (char*)malloc(sizeof(char)*(len+1));
+    rst[0] = '&';
+    for(int i = 1; i <= len; i++) {
+        rst[i] = temp[i-1];
+    }
+    return rst;
+}
+
+char* getVal(char *temp)
+{
+    int len = strlen(temp);
+    char *rst = (char*)malloc(sizeof(char)*(len+1));
+    rst[0] = '*';
+    for(int i = 1; i <= len; i++) {
+        rst[i] = temp[i-1];
+    }
+    return rst;
 }
 
 char *newTemp()
@@ -316,6 +337,9 @@ CodeNodeP translateArgs(PEXP arg_node, char **arg_list)
     {
         char *t1 = newTemp();
         CodeNodeP code1 = translateExp(arg_node->ptr.pExp1,t1);
+        if((arg_node->ptr.pExp1)->kind == ARRAY_NODE) {
+            t1 = getVal(t1);
+        }
         insertStrIntoArray(t1 , arg_list);
         if(arg_node->ptr.pExp2 == NULL) {
             return code1;
@@ -336,6 +360,7 @@ CodeNodeP translateArgs(PEXP arg_node, char **arg_list)
     case MINUS_NODE:
     case STAR_NODE:
     case DIV_NODE:
+    case ARRAY_NODE:
     {
         char *t1 = newTemp();
         CodeNodeP code1 = translateExp(arg_node,t1);
@@ -367,14 +392,97 @@ CodeNodeP translateExp(PEXP exp, char place[])
         tempCode = getCode(OP_ASSIGN, alias, NULL, place);
         break;
     }
+    case ARRAY_NODE:
+    {
+        char *alias = getVariableAlias(exp->array.array_id);
+        PEXP array_node = getArrayNode(exp->array.array_id);
+        int index1 = array_node->id.index1;
+        int index2 = array_node->id.index2;
+        int index3 = array_node->id.index3;
+        switch (exp->array.dimension)
+        {
+        case 1:
+        {
+            char *t1 = newTemp();
+            char *t_offset = newTemp();
+            CodeNodeP code1 = translateExp(exp->array.pExp1 , t1);
+            CodeNodeP offset_code = getCode(OP_STAR, t1, "#4",t_offset);
+            char *addr = getAdr(alias);
+            CodeNodeP code_final = getCode(OP_PLUS, addr, t_offset, place);
+            tempCode = mergeCode(code1 , offset_code);
+            tempCode = mergeCode(tempCode, code_final);
+            break;
+        }
+        case 2:
+        {
+            char *t1 = newTemp();
+            char *t2 = newTemp();
+            char *t1_offset = newTemp();
+            char *t2_offset = newTemp();
+            char *t_offset = newTemp();
+            CodeNodeP code1 = translateExp(exp->array.pExp1 , t1);
+            CodeNodeP code2 = translateExp(exp->array.pExp2 , t2);
+            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2),t1_offset);
+            CodeNodeP offset2_code = getCode(OP_STAR, t2, "#4", t2_offset);
+            CodeNodeP offset_code = getCode(OP_PLUS, t1_offset, t2_offset, t_offset);
+            char *addr = getAdr(alias);
+            CodeNodeP code_final = getCode(OP_PLUS, addr, t_offset, place);
+            tempCode = mergeCode(code1, code2);
+            tempCode = mergeCode(tempCode, offset1_code);
+            tempCode = mergeCode(tempCode, offset2_code);
+            tempCode = mergeCode(tempCode, offset_code);
+            tempCode = mergeCode(tempCode, code_final);
+            break;
+        }
+        case 3:
+        {
+            char *t1 = newTemp();
+            char *t2 = newTemp();
+            char *t3 = newTemp();
+            char *t1_offset = newTemp();
+            char *t2_offset = newTemp();
+            char *t3_offset = newTemp();
+            char *t_offset = newTemp();
+            char *t_offset_temp = newTemp();
+            CodeNodeP code1 = translateExp(exp->array.pExp1 , t1);
+            CodeNodeP code2 = translateExp(exp->array.pExp2 , t2);
+            CodeNodeP code3 = translateExp(exp->array.pExp3 , t3);
+            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2*index3),t1_offset);
+            CodeNodeP offset2_code = getCode(OP_STAR, t2, intToStr(index3), t2_offset);
+            CodeNodeP offset3_code = getCode(OP_STAR, t3, "#4", t3_offset);
+            CodeNodeP offset_code = getCode(OP_PLUS, t1_offset, t2_offset, t_offset_temp);
+            offset_code = getCode(OP_PLUS, t_offset_temp, t3_offset, t_offset);
+            char *addr = getAdr(alias);
+            CodeNodeP code_final = getCode(OP_PLUS, addr, t_offset, place);
+            tempCode = mergeCode(code1, code2);
+            tempCode = mergeCode(tempCode, code3);
+            tempCode = mergeCode(tempCode, offset1_code);
+            tempCode = mergeCode(tempCode, offset2_code);
+            tempCode = mergeCode(tempCode, offset3_code);
+            tempCode = mergeCode(tempCode, offset_code);
+            tempCode = mergeCode(tempCode, code_final);
+            break;
+        }
+        }
+        break;
+    }
     case ASSIGN_NODE:
     {
-        char *alias = getVariableAlias((exp->ptr.pExp1)->id.type_id);
+        // char *alias = getVariableAlias((exp->ptr.pExp1)->id.type_id);
         char *t1 = newTemp();
-        CodeNodeP p1, p2;
-        p1 = translateExp(exp->ptr.pExp2, t1);
-        p2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        char *t2 = newTemp();
+        CodeNodeP p1, p2, p3;
+        p1 = translateExp(exp->ptr.pExp1, t1);
+        p2 = translateExp(exp->ptr.pExp2, t2);
+        if((exp->ptr.pExp1)->kind == ARRAY_NODE) {
+            t1 = getVal(t1);
+        }
+        if((exp->ptr.pExp2)->kind == ARRAY_NODE) {
+            t2 = getVal(t2);
+        }
+        p3 = getCode(OP_ASSIGN, t2, NULL, t1);
         tempCode = mergeCode(p1, p2);
+        tempCode = mergeCode(tempCode, p3);
         break;
     }
     case PLUS_NODE:
@@ -389,10 +497,14 @@ CodeNodeP translateExp(PEXP exp, char place[])
         }
         else
         {
-            log("parse plus left\n");
             first = translateExp(exp->ptr.pExp1, t1);
-            log("parse plus right\n");
             next = translateExp(exp->ptr.pExp2, t2);
+        }
+        if((exp->ptr.pExp1)->kind == ARRAY_NODE) {
+            t1 = getVal(t1);
+        }
+        if((exp->ptr.pExp2)->kind == ARRAY_NODE) {
+            t2 = getVal(t2);
         }
         tempCode = mergeCode(first, next);
         third = getCode(OP_PLUS, t1, t2, place);
@@ -414,6 +526,12 @@ CodeNodeP translateExp(PEXP exp, char place[])
             first = translateExp(exp->ptr.pExp1, t1);
             next = translateExp(exp->ptr.pExp2, t2);
         }
+        if((exp->ptr.pExp1)->kind == ARRAY_NODE) {
+            t1 = getVal(t1);
+        }
+        if((exp->ptr.pExp2)->kind == ARRAY_NODE) {
+            t2 = getVal(t2);
+        }
         tempCode = mergeCode(first, next);
         third = getCode(OP_MINUS, t1, t2, place);
         tempCode = mergeCode(tempCode, third);
@@ -434,6 +552,12 @@ CodeNodeP translateExp(PEXP exp, char place[])
             first = translateExp(exp->ptr.pExp1, t1);
             next = translateExp(exp->ptr.pExp2, t2);
         }
+        if((exp->ptr.pExp1)->kind == ARRAY_NODE) {
+            t1 = getVal(t1);
+        }
+        if((exp->ptr.pExp2)->kind == ARRAY_NODE) {
+            t2 = getVal(t2);
+        }
         tempCode = mergeCode(first, next);
         third = getCode(OP_STAR, t1, t2, place);
         tempCode = mergeCode(tempCode, third);
@@ -453,6 +577,12 @@ CodeNodeP translateExp(PEXP exp, char place[])
         {
             first = translateExp(exp->ptr.pExp1, t1);
             next = translateExp(exp->ptr.pExp2, t2);
+        }
+        if((exp->ptr.pExp1)->kind == ARRAY_NODE) {
+            t1 = getVal(t1);
+        }
+        if((exp->ptr.pExp2)->kind == ARRAY_NODE) {
+            t2 = getVal(t2);
         }
         tempCode = mergeCode(first, next);
         third = getCode(OP_DIV, t1, t2, place);
