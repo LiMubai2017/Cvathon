@@ -4,7 +4,6 @@ int test(int a)
 }
 int main()
 {
-    int n
-    n = test(n)
+    int n[3][4][3]
     return 0
 }

@@ -9,7 +9,8 @@ extern int exp2;
 extern int exp3;
 extern void log(char* );
 
-enum SymbalType{TYPE_INT,TYPE_FLOAT,TYPE_CHAR,TYPE_VOID};
+enum SymbalType{TYPE_INT,TYPE_FLOAT,TYPE_CHAR,TYPE_VOID,
+				TYPE_INT_ARRAY,TYPE_FLOAT_ARRAY,TYPE_CHAR_ARRAY};
 enum FlagType{FLAG_F,FLAG_P,FLAG_V};
 typedef struct Symbal{
 	char name[30];
@@ -19,6 +20,7 @@ typedef struct Symbal{
 	char flag;
 	int offset;
 	PEXP function_param;
+	PEXP array_node;
 }*SymbalP;
 int index=0;
 SymbalP table[100];
@@ -207,15 +209,19 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 	int offsetDelta=0;
 	char *name;
 	SymbalP current;
+	enum SymbalType array_type;
 	switch(type) {
 		case TYPE_INT:
 			offsetDelta=4;
+			array_type = TYPE_INT_ARRAY;
 			break;
 		case TYPE_FLOAT:
 			offsetDelta=4;
+			array_type = TYPE_FLOAT_ARRAY;
 			break;
 		case TYPE_CHAR:
 			offsetDelta=1;
+			array_type = TYPE_CHAR_ARRAY;
 			break;
 	}
 	
@@ -233,7 +239,7 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 			name=T->id.type_id;
 			if(!_checkDefine(name,level,line)) {
 				if(exp2 || exp3) {
-					printf("ï¿½ï¿½ï¿½ï¿½  ï¿½ÐºÅ£ï¿½%d  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½%s\n",line,name);
+					printf("ÐÐºÅ£º%d  ±äÁ¿ÖØ¸´¶¨Òå%s\n",line,name);
 					getchar();
 				}
 				return 0;
@@ -249,7 +255,40 @@ int insertSub(PEXP T,enum SymbalType type,int level,int line)
 			push(current);
 			break;
 		case ID_ARRAY_NODE:
+		{
+			name=T->id.type_id;
+			if(!_checkDefine(name,level,line)) {
+				if(exp2 || exp3) {
+					printf("ÐÐºÅ£º%d  ±äÁ¿ÖØ¸´¶¨Òå%s\n",line,name);
+					getchar();
+				}
+				return 0;
+			}
+			current=(SymbalP)malloc(sizeof(struct Symbal));
+			strcpy(current->name,T->function.function_name);
+			strcpy(current->alias,getNewAlias());
+			current->level=level;
+			current->type=array_type;
+			current->flag=FLAG_V;
+			current->array_node=T;
+			current->offset=offset[level];
+			int wholesize = 0;
+			switch (T->id.dimension)
+			{
+			case 1:
+				wholesize = T->id.index1;
+				break;
+			case 2:
+				wholesize = T->id.index1 * T->id.index2;
+				break;
+			case 3:
+				wholesize = T->id.index1 * T->id.index2 * T->id.index3;
+				break;
+			}
+			offset[level]+=offsetDelta * wholesize;
+			push(current);			
 			break;
+		}
 	}
 	return 1;
 }
@@ -511,6 +550,15 @@ void displayTable()
 				break;
 			case TYPE_VOID:
 				printf("void\t");
+				break;
+			case TYPE_INT_ARRAY:
+				printf("int[]\t");
+				break;
+			case TYPE_FLOAT_ARRAY:
+				printf("float[]\t");
+				break;
+			case TYPE_CHAR_ARRAY:
+				printf("char[]\t");
 				break;
 		}
 		switch(table[i]->flag) {

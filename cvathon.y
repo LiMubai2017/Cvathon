@@ -62,7 +62,8 @@ line : '\n'    { ;}
 						if(exp3) {translateStmt($1);}}
 	 | declare '\n' %prec DECLARE_PRI {if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2 || exp3) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
-					blockTypes[nestCodeBlock]=OTHER_BLOCK;}}
+					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
+					if(exp3) {translateStmt($1);}}
 	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
 					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
@@ -156,14 +157,15 @@ exp_unary : MINUS exp     {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=UMINUS_
 		  | DEC id  {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DEC_PREFIX_NODE;  $$->ptr.pExp1=$2;}
 		  | id INC %prec UNARY {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=INC_SUFFIX_NODE;  $$->ptr.pExp1=$1;}
 		  | id DEC %prec UNARY {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=DEC_SUFFIX_NODE;  $$->ptr.pExp1=$1;}
-id	: ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_NODE; strcpy($$->id.type_id,$1);}
+id	: ID {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_NODE; strcpy($$->id.type_id,$1);
+		  $$->id.dimension=0;$$->id.index1=0;$$->id.index2=0;$$->id.index3=0;}
 id_array : ID MLP INTEGER MRP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_ARRAY_NODE; strcpy($$->id.type_id,$1);
-								$$->id.dimension=1;$$->id.index1=$3;}
+								$$->id.dimension=1;$$->id.index1=$3;$$->id.index2=0;$$->id.index3=0;}
 		 | ID MLP INTEGER MRP MLP INTEGER MRP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_ARRAY_NODE; 
-									strcpy($$->id.type_id,$1);$$->id.dimension=2;$$->id.index1=$3;$$->id.index2=$6;}
+									strcpy($$->id.type_id,$1);$$->id.dimension=2;$$->id.index1=$3;$$->id.index2=$6;$$->id.index3=0;}
 		 | ID MLP INTEGER MRP MLP INTEGER MRP MLP INTEGER MRP
 									{$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=ID_ARRAY_NODE; 
-									strcpy($$->id.type_id,$1);$$->id.dimension=2;$$->id.index1=$3;$$->id.index2=$6;$$->id.index3=$9;}
+									strcpy($$->id.type_id,$1);$$->id.dimension=3;$$->id.index1=$3;$$->id.index2=$6;$$->id.index3=$9;}
 	
 %%
 

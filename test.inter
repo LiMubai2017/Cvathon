@@ -5,9 +5,6 @@ t3 := #1
 t1 := t2 + t3
 RETURN t1
 FUNCTION main :
-t5 := v2
-ARG t5
-t4 :=CALL test
-v2 := t4
-t6 := #0
-RETURN t6
+DEC v2 #144
+t4 := #0
+RETURN t4

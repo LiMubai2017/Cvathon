@@ -27,6 +27,7 @@ enum Operation
     OP_UE,
     OP_READ,
     OP_WRITE,
+    OP_DEC,
 };
 
 typedef struct CodeNode
@@ -38,6 +39,7 @@ typedef struct CodeNode
 
 void insertStrIntoArray(char*, char**);
 CodeNodeP translateExp(PEXP exp, char place[]);
+CodeNodeP _translateArrayDeclare(enum node_kind kind , PEXP array_node);
 
 int temp_index = 0;
 int label_index = 0;
@@ -130,6 +132,9 @@ void printCodeToFile()
         case OP_WRITE:
             fprintf(fp, "WRITE %s\n", current->result);
             break;
+        case OP_DEC:
+            fprintf(fp, "DEC %s %s\n", current->result,current->opn1);
+            break;
         }
         current = current->next;
     }
@@ -200,6 +205,7 @@ char *intToStr(int num)
         i--;
     }
     tempStr[len + 1] = '\0';
+    log(tempStr);
     return tempStr;
 }
 
@@ -624,7 +630,7 @@ CodeNodeP translateCond(PEXP exp, char *label_true, char *label_false)
 CodeNodeP translateStmt(PEXP exp)
 {
     log("start translate stmt\n");
-    CodeNodeP tempCode;
+    CodeNodeP tempCode = NULL;
     switch (exp->kind)
     {
     case INTEGER_NODE:
@@ -645,7 +651,6 @@ CodeNodeP translateStmt(PEXP exp)
         break;
     case RETURN_NODE:
     {
-        log("found return\n");
         switch (exp->return_exp.returnType)
         {
         case RETURN_VOID:
@@ -654,15 +659,12 @@ CodeNodeP translateStmt(PEXP exp)
         case RETURN_EXP:
         {
             char *t1 = newTemp();
-            log("translate return exp\n");
             CodeNodeP code1 = translateExp(exp->return_exp.pExp, t1);
-            log("label1\n");
             CodeNodeP code2 = getCode(OP_RETURN, NULL, NULL, t1);
             tempCode = mergeCode(code1, code2);
             break;
         }
         }
-        log("finish parse return\n");
         addToList(tempCode);
         break;
     }
@@ -679,12 +681,85 @@ CodeNodeP translateStmt(PEXP exp)
         nodeToParse[nestCodeBlock] = exp;
         break;
     case FUNCTION_DECLARE_NODE:
-        log("found function declare\n");
         nodeToParse[nestCodeBlock] = exp;
         break;
+    case INT_NODE:
+    {
+        PEXP sub_declare = exp->ptr.pExp1;
+        while(sub_declare!=NULL) {
+            if((sub_declare->ptr.pExp1)->id.dimension != 0) {
+                CodeNodeP dec_code = _translateArrayDeclare(INT_NODE,sub_declare->ptr.pExp1);
+                tempCode = mergeCode(tempCode , dec_code);
+            }
+            sub_declare = sub_declare->ptr.pExp2;
+        }
+        addToList(tempCode);
+        break;
+    }
+    case CHAR_NODE:
+    {
+        PEXP sub_declare = exp->ptr.pExp1;
+        while(sub_declare!=NULL) {
+            if((sub_declare->ptr.pExp1)->id.dimension != 0) {
+                tempCode = mergeCode(tempCode , _translateArrayDeclare(CHAR_NODE,sub_declare->ptr.pExp1));
+            }
+            sub_declare = sub_declare->ptr.pExp2;
+        }
+        addToList(tempCode);
+        break;
+    }
+    case FLOAT_NODE:
+    {
+        PEXP sub_declare = exp->ptr.pExp1;
+        while(sub_declare!=NULL) {
+            if((sub_declare->ptr.pExp1)->id.dimension != 0) {
+                tempCode = mergeCode(tempCode , _translateArrayDeclare(FLOAT_NODE,sub_declare->ptr.pExp1));
+            }
+            sub_declare = sub_declare->ptr.pExp2;
+        }
+        addToList(tempCode);
+        break;
+    }
     }
 
     return tempCode;
+}
+
+CodeNodeP _translateArrayDeclare(enum node_kind kind , PEXP array_node)
+{
+    log("parse declare array\n");
+    int size;
+    switch (kind)
+    {
+    case INT_NODE:
+        size = 4;
+        break;
+    case CHAR_NODE:
+        size = 2;
+        break;
+    case FLOAT_NODE:
+        size = 8;
+        break;
+    }
+    int index1 = array_node->id.index1;
+    int index2 = array_node->id.index2;
+    int index3 = array_node->id.index3;
+    int whole_size=0;
+    switch (array_node->id.dimension)
+    {
+    case 1:
+        whole_size = index1 * size;
+        break;
+    case 2:
+        whole_size = index1 * index2 * size;
+        break;
+    case 3:
+        whole_size = index1 * index2 * index3 * size;
+        break;
+    }
+    char *alias = getVariableAlias(array_node->id.type_id);
+    char *size_str = intToStr(whole_size);
+    return getCode(OP_DEC, size_str,NULL,alias);
 }
 
 void parsePreCode()
@@ -706,14 +781,10 @@ void parsePreCode()
         label1 = newLabel();
         label2 = newLabel();
         CodeNodeP exp = node->ptr.pExp1;
-        log("parse code1\n");
         CodeNodeP code1 = translateCond(exp,label1,label2);
-        log("parse code2\n");
         CodeNodeP code2 = codeList[nestCodeBlock+1];
-        log("parse code_label\n");
         CodeNodeP code_label1 = getCode(OP_LABEL,NULL,NULL,label1);
         CodeNodeP code_label2 = getCode(OP_LABEL,NULL,NULL,label2);
-        log("merge code\n");
         tempCode = mergeCode(code1,code_label1);
         tempCode = mergeCode(tempCode , code2);
         tempCode = mergeCode(tempCode, code_label2);
