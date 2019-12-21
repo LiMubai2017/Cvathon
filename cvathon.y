@@ -93,7 +93,7 @@ line : '\n'    { ;}
 					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
 					if(exp3) {translateStmt($1);}}
-	 | error '\n' { printf("line error!\n");}
+	 | error '\n' {printf("line error!\n");}
 	 ;
 
 function : VOID ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=VOID_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
@@ -191,7 +191,10 @@ int main(int argc, char *argv[]){
 	}
 	
 yyerror(char *s){
-   printf("%s   %s \n",s,yytext);
- }
+   printf("%s   %s ,line: %d\n",s,yytext,yylineno);
+	if(!exp1) {
+		exit(1);
+	}
+}
 
 

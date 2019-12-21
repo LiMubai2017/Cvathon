@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 int getIntLen(int num)
 {
@@ -31,8 +32,15 @@ void insertStrIntoArray(char *a, char **array)
 }
 
 void log(char msg[]) {
+    if(msg == NULL) return;
     char log_enable = 1;
     if(log_enable) {
         printf("%s\n", msg);
     }
+}
+
+void showSyntaxError() {
+    printf("Syntax error Process terminates\n");
+    getchar();
+    exit(1);
 }

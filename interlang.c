@@ -51,6 +51,7 @@ PEXP nodeToParse[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
 void printCodeToFile()
 {
     log("start print\n");
+
     if (codeList[0] == NULL)
     {
         log("intermediate code unvailable\n");
@@ -103,7 +104,11 @@ void printCodeToFile()
             fprintf(fp, "ARG %s\n", current->result);
             break;
         case OP_CALL:
-            fprintf(fp, "%s :=CALL %s\n", current->result, current->opn1);
+            if(strcmp(current->result,"") == 0) {
+                fprintf(fp, "CALL %s\n", current->opn1);
+            } else {
+                fprintf(fp, "%s :=CALL %s\n", current->result, current->opn1);
+            }
             break;
         case OP_PARAM:
             fprintf(fp, "PARAM %s\n", current->result);
@@ -179,14 +184,20 @@ CodeNodeP getCode(enum Operation op, char opn1[], char opn2[], char result[])
     if (opn1 != NULL)
     {
         strcpy(temp->opn1, opn1);
+    } else {
+        strcpy(temp->opn1, "");
     }
     if (opn2 != NULL)
     {
         strcpy(temp->opn2, opn2);
+    } else {
+        strcpy(temp->opn2, "");
     }
     if (result != NULL)
     {
         strcpy(temp->result, result);
+    } else {
+        strcpy(temp->result, "");
     }
     temp->next = NULL;
     temp->pre = NULL;
@@ -399,6 +410,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
         int index1 = array_node->id.index1;
         int index2 = array_node->id.index2;
         int index3 = array_node->id.index3;
+
         switch (exp->array.dimension)
         {
         case 1:
@@ -422,7 +434,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
             char *t_offset = newTemp();
             CodeNodeP code1 = translateExp(exp->array.pExp1 , t1);
             CodeNodeP code2 = translateExp(exp->array.pExp2 , t2);
-            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2),t1_offset);
+            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2*4),t1_offset);
             CodeNodeP offset2_code = getCode(OP_STAR, t2, "#4", t2_offset);
             CodeNodeP offset_code = getCode(OP_PLUS, t1_offset, t2_offset, t_offset);
             char *addr = getAdr(alias);
@@ -447,11 +459,11 @@ CodeNodeP translateExp(PEXP exp, char place[])
             CodeNodeP code1 = translateExp(exp->array.pExp1 , t1);
             CodeNodeP code2 = translateExp(exp->array.pExp2 , t2);
             CodeNodeP code3 = translateExp(exp->array.pExp3 , t3);
-            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2*index3),t1_offset);
-            CodeNodeP offset2_code = getCode(OP_STAR, t2, intToStr(index3), t2_offset);
+            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2*index3*4),t1_offset);
+            CodeNodeP offset2_code = getCode(OP_STAR, t2, intToStr(index3*4), t2_offset);
             CodeNodeP offset3_code = getCode(OP_STAR, t3, "#4", t3_offset);
-            CodeNodeP offset_code = getCode(OP_PLUS, t1_offset, t2_offset, t_offset_temp);
-            offset_code = getCode(OP_PLUS, t_offset_temp, t3_offset, t_offset);
+            CodeNodeP offset_temp_code = getCode(OP_PLUS, t1_offset, t2_offset, t_offset_temp);
+            CodeNodeP offset_code = mergeCode(offset_temp_code , getCode(OP_PLUS, t_offset_temp, t3_offset, t_offset));
             char *addr = getAdr(alias);
             CodeNodeP code_final = getCode(OP_PLUS, addr, t_offset, place);
             tempCode = mergeCode(code1, code2);
@@ -468,15 +480,23 @@ CodeNodeP translateExp(PEXP exp, char place[])
     }
     case ASSIGN_NODE:
     {
-        // char *alias = getVariableAlias((exp->ptr.pExp1)->id.type_id);
-        char *t1 = newTemp();
-        char *t2 = newTemp();
-        CodeNodeP p1, p2, p3;
-        p1 = translateExp(exp->ptr.pExp1, t1);
-        p2 = translateExp(exp->ptr.pExp2, t2);
+        char *t1, *t2;
+        CodeNodeP p1=NULL, p2=NULL, p3=NULL;
         if((exp->ptr.pExp1)->kind == ARRAY_NODE) {
+            t1 = newTemp();
+            p1 = translateExp(exp->ptr.pExp1, t1);
             t1 = getVal(t1);
+        } else {
+            if((exp->ptr.pExp1)->kind == ID_NODE) {
+                t1 = getVariableAlias((exp->ptr.pExp1)->id.type_id);
+            } else {
+                printf("unsupported assign\n");
+                getchar();
+                exit(1);
+            }
         }
+        t2 = newTemp();
+        p2 = translateExp(exp->ptr.pExp2, t2);
         if((exp->ptr.pExp2)->kind == ARRAY_NODE) {
             t2 = getVal(t2);
         }
@@ -598,19 +618,61 @@ CodeNodeP translateExp(PEXP exp, char place[])
         break;
     }
     case INC_PREFIX_NODE:
+    {
+        log("parse inc prefix");
+        char *t1 = newTemp();
+        PEXP id_node = exp->ptr.pExp1;
+        char *alias = getVariableAlias(id_node->id.type_id);
+        CodeNodeP code1 = getCode(OP_PLUS, alias, one, t1);
+        CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        tempCode = mergeCode(code1, code2);
+        if(place != NULL) {
+            tempCode = mergeCode(tempCode, getCode(OP_ASSIGN, alias, NULL,place));
+        }
+        break;
+    }
     case INC_SUFFIX_NODE:
     {
-        char *t1 = newTemp;
-        tempCode = getCode(OP_PLUS, exp->ptr.pExp1, one, t1);
-        tempCode->next = getCode(OP_ASSIGN, t1, NULL, place);
+        log("parse inc suffix");
+        char *t1 = newTemp();
+        PEXP id_node = exp->ptr.pExp1;
+        char *alias = getVariableAlias(id_node->id.type_id);
+        if(place != NULL) {
+            tempCode = getCode(OP_ASSIGN, alias, NULL,place);
+        }
+        CodeNodeP code1 = getCode(OP_PLUS, alias, one, t1);
+        CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        tempCode = mergeCode(tempCode, code1);
+        tempCode = mergeCode(tempCode, code2);
+        break;
+    }
+    case DEC_PREFIX_NODE:
+    {
+        log("parse dec prefix");
+        char *t1 = newTemp();
+        PEXP id_node = exp->ptr.pExp1;
+        char *alias = getVariableAlias(id_node->id.type_id);
+        CodeNodeP code1 = getCode(OP_MINUS, alias, one, t1);
+        CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        tempCode = mergeCode(code1, code2);
+        if(place != NULL) {
+            tempCode = mergeCode(tempCode, getCode(OP_ASSIGN, alias, NULL,place));
+        }
         break;
     }
     case DEC_SUFFIX_NODE:
-    case DEC_PREFIX_NODE:
     {
-        char *t1 = newTemp;
-        tempCode = getCode(OP_MINUS, exp->ptr.pExp1, one, t1);
-        tempCode->next = getCode(OP_ASSIGN, t1, NULL, place);
+        log("parse dec suffix");
+        char *t1 = newTemp();
+        PEXP id_node = exp->ptr.pExp1;
+        char *alias = getVariableAlias(id_node->id.type_id);
+        if(place != NULL) {
+            tempCode = getCode(OP_ASSIGN, alias, NULL,place);
+        }
+        CodeNodeP code1 = getCode(OP_MINUS, alias, one, t1);
+        CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        tempCode = mergeCode(tempCode, code1);
+        tempCode = mergeCode(tempCode, code2);
         break;
     }
     case FUNCTION_FIRE_NODE:
