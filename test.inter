@@ -1,13 +1,18 @@
 FUNCTION test :
 PARAM v1
-t1 := v2
+t2 := v1
+t3 := #1
+t1 := t2 + t3
 RETURN t1
 FUNCTION main :
-t5 := v3 + #1
-v3 := t5
-t3 := v3
-t4 := v3
-t2 := t3 + t4
-v4 := t2
+DEC v4 #800
+t5 := #0
 t6 := #0
-RETURN t6
+t7 := t5 * #80
+t8 := t6 * #4
+t9 := t7 + t8
+t4 := &v4 + t9
+t10 := v2
+*t4 := t10
+t11 := #0
+RETURN t11

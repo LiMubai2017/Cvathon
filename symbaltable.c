@@ -7,6 +7,7 @@ extern int getIntLen(int);
 extern int offset[5];
 extern int exp2;
 extern int exp3;
+extern int exp4;
 extern void log(char *);
 
 enum SymbalType
@@ -231,7 +232,7 @@ int insertIntoTable(PEXP T, int level, int line)
 		}
 		else
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("行号：%d  函数名声明冲突%s\n", line, name);
 			}
@@ -308,7 +309,7 @@ int insertSub(PEXP T, enum SymbalType type, int level, int line)
 		name = T->id.type_id;
 		if (!_checkDefine(name, level, line))
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("行号：%d  变量重复定义%s\n", line, name);
 				getchar();
@@ -330,7 +331,7 @@ int insertSub(PEXP T, enum SymbalType type, int level, int line)
 		name = T->id.type_id;
 		if (!_checkDefine(name, level, line))
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("行号：%d  变量重复定义%s\n", line, name);
 				getchar();
@@ -383,7 +384,7 @@ int checkTable(PEXP T, int level, int line)
 		result = _checkExist(name, level, line, FLAG_F);
 		if (result)
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("行号：%d  函数未定义%s\n", line, name);
 				getchar();
@@ -401,7 +402,7 @@ int checkTable(PEXP T, int level, int line)
 		}
 		if (result)
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("行号：%d  函数调用参数类型或数量不匹配\n", line);
 				getchar();
@@ -419,7 +420,7 @@ int checkTable(PEXP T, int level, int line)
 		}
 		if (result)
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("行号：%d  continue不在循环内\n", line);
 				getchar();
@@ -440,7 +441,7 @@ int checkTable(PEXP T, int level, int line)
 		}
 		if (result)
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("行号：%d  break不在循环内\n", line);
 				getchar();
@@ -455,7 +456,7 @@ int checkTable(PEXP T, int level, int line)
 		}
 		else
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("else不跟在if之后  行号%d \n", line);
 				getchar();
@@ -468,7 +469,7 @@ int checkTable(PEXP T, int level, int line)
 		SymbalP function = _getLastFunction();
 		if (level == 0 || function == NULL)
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("在函数外使用return 行号：%d \n", line);
 				getchar();
@@ -480,7 +481,7 @@ int checkTable(PEXP T, int level, int line)
 		case TYPE_VOID:
 		{
 			if(T->return_exp.returnType != RETURN_VOID) {
-				if (exp2 || exp3)
+				if (exp2 || exp3 || exp4)
 				{
 					printf("函数返回类型不匹配 行号：%d \n", line);
 					getchar();
@@ -494,7 +495,7 @@ int checkTable(PEXP T, int level, int line)
 		default:
 		{
 			if(T->return_exp.returnType == RETURN_VOID) {
-				if (exp2 || exp3)
+				if (exp2 || exp3 || exp4)
 				{
 					printf("函数返回类型不匹配 行号：%d \n", line);
 					getchar();
@@ -505,7 +506,7 @@ int checkTable(PEXP T, int level, int line)
 			result = _checkExpType(type, T->return_exp.pExp);
 			if (result)
 			{
-				if (exp2 || exp3)
+				if (exp2 || exp3 || exp4)
 				{
 					printf("函数返回类型不匹配 行号：%d \n", line);
 					getchar();
@@ -522,7 +523,7 @@ int checkTable(PEXP T, int level, int line)
 		result = _checkExist(name, level, line, FLAG_V);
 		if (result)
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("变量未定义  行号 %d  变量名：%s\n", line, name);
 				getchar();
@@ -536,7 +537,7 @@ int checkTable(PEXP T, int level, int line)
 		result = _checkExist(name, level, line, FLAG_ARRAY);
 		if (result)
 		{
-			if(exp2 || exp3) {
+			if(exp2 || exp3 || exp4) {
 				printf("数组变量未定义 行号：%d\n", line);
 				getchar();
 			}
@@ -544,7 +545,7 @@ int checkTable(PEXP T, int level, int line)
 		}
 		PEXP declared_array = getArrayNode(name);
 		if(declared_array->array.dimension != T->array.dimension) {
-			if(exp2 || exp3) {
+			if(exp2 || exp3 || exp4) {
 				printf("数组维度与声明不符 行号：%d\n", line);
 				getchar();
 			}
@@ -563,7 +564,7 @@ int checkTable(PEXP T, int level, int line)
 		{
 			result = 1;
 		}
-		if (result && (exp2 || exp3))
+		if (result && (exp2 || exp3 || exp4))
 		{
 			printf("数组下标不为整形 行号：%d\n", line);
 			getchar();
@@ -585,7 +586,7 @@ int checkTable(PEXP T, int level, int line)
 		result = _checkExpType(type, T->ptr.pExp2);
 		if (result)
 		{
-			if (exp2 || exp3)
+			if (exp2 || exp3 || exp4)
 			{
 				printf("类型不匹配，行号：%d\n", line);
 				getchar();

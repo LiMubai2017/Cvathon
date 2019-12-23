@@ -13,6 +13,7 @@ int exp1 = 0;
 int showWordArray=0;
 int exp2 = 0;
 int exp3 = 0;
+int exp4 = 0;
 int offset[5]={0,0,0,0,0};
 enum BlockType blockTypes[10]={OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK,OTHER_BLOCK};
 extern int yylineno;
@@ -53,46 +54,47 @@ input:
 	 ;
 line : '\n'    { ;}
 	 | function '\n' %prec FUNCTION_PRI {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3 || exp4) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=FUNCTION_BLOCK;}
-					if(exp3) {translateStmt($1);}}
+					if(exp3 || exp4) {translateStmt($1);}}
 	 | function_fire '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-						if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+						if(exp2 || exp3 || exp4) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 						blockTypes[nestCodeBlock]=OTHER_BLOCK;}
-						if(exp3) {translateStmt($1);}}
+						if(exp3 || exp4) {translateStmt($1);}}
 	 | declare '\n' %prec DECLARE_PRI {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3 || exp4) {if(!insertIntoTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
-					if(exp3) {translateStmt($1);}}
+					if(exp3 || exp4) {translateStmt($1);}}
 	 | assign '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3 || exp4) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
-					if(exp3) {translateStmt($1);}}
+					if(exp3 || exp4) {translateStmt($1);}}
 	 | exp_unary {if(exp1) {display($1,nestCodeBlock*blanks);}
-				if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+				if(exp2 || exp3 || exp4) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 				blockTypes[nestCodeBlock]=OTHER_BLOCK;}
-				if(exp3) {translateStmt($1);}}
+				if(exp3 || exp4) {translateStmt($1);}}
 	 | BLP '\n' {if(exp1) {displayMessage(0,(nestCodeBlock+1)*blanks);}nestCodeBlock+=1;}
 	 | BRP '\n' {nestCodeBlock-=1;
-				if(exp3) parsePreCode();
-				if(exp2 || exp3) {tableOut(nestCodeBlock+1);}
-				if(exp2 || exp3){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}}
+				if(exp3 || exp4) parsePreCode();
+				if(exp2 || exp3 || exp4) {tableOut(nestCodeBlock+1);}
+				if(exp2 || exp3 || exp4){offset[nestCodeBlock]+=offset[nestCodeBlock+1];offset[nestCodeBlock+1]=0;}}
 	 | if_line '\n'	{if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) blockTypes[nestCodeBlock]=IF_BLOCK;
-					if(exp3) translateStmt($1);}
+					if(exp2 || exp3 || exp4) blockTypes[nestCodeBlock]=IF_BLOCK;
+					if(exp3 || exp4) translateStmt($1);}
 	 | while_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) blockTypes[nestCodeBlock]=WHILE_BLOCK;
-					if(exp3) translateStmt($1);}
+					if(exp2 || exp3 || exp4) blockTypes[nestCodeBlock]=WHILE_BLOCK;
+					if(exp3 || exp4) translateStmt($1);}
 	 | for_line '\n'{if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) blockTypes[nestCodeBlock]=FOR_BLOCK;}
+					if(exp2 || exp3 || exp4) blockTypes[nestCodeBlock]=FOR_BLOCK;
+					if(exp3 || exp4) translateStmt($1);}
 	 | control '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3 || exp4) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
-					if(exp3) translateStmt($1);}
+					if(exp3 || exp4) translateStmt($1);}
 	 | return_line '\n' {if(exp1) {display($1,nestCodeBlock*blanks);}
-					if(exp2 || exp3) {if(checkTable($1,nestCodeBlock,yylineno)) return;
+					if(exp2 || exp3 || exp4) {if(checkTable($1,nestCodeBlock,yylineno)) return;
 					blockTypes[nestCodeBlock]=OTHER_BLOCK;}
-					if(exp3) {translateStmt($1);}}
+					if(exp3 || exp4) {translateStmt($1);}}
 	 | error '\n' {printf("line error!\n");}
 	 ;
 
@@ -184,6 +186,7 @@ int main(int argc, char *argv[]){
 		if (strcmp(argv[2],"-exp1")==0) exp1 = 1;
 		if (strcmp(argv[2],"-exp2")==0) exp2 = 1;
 		if (strcmp(argv[2],"-exp3")==0) exp3 = 1;
+		if (strcmp(argv[2],"-exp4")==0) exp4 = 1;
 	}
 	if (!yyin) return;
 	yyparse();

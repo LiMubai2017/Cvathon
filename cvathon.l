@@ -15,6 +15,7 @@ extern int exp1;
 extern int showWordArray;
 extern int exp2;
 extern int exp3;
+extern int exp4;
 ARRAYP array = NULL,current;
 %}
 id   [A-Za-z][A-Za-z0-9]*  
@@ -64,7 +65,8 @@ return		{return RETURN;}
 [<]		   {addWord(LESS_ARRAY,yytext);return LESS;}
 .          {printf("error in line %d\n",yylineno);}
 <<EOF>>	   {if(exp1&&showWordArray) {displayMessage(2,0);displayWordsArray(array);}
-			if(exp3) {printCodeToFile();}yyterminate();}
+			if(exp3) {printCodeToFile();} if(exp4) {transferInterToObj();}
+			yyterminate();}
 %%
 /*
 int main()

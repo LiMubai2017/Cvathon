@@ -74,3 +74,36 @@ typedef struct Array {
 	struct Array *next;
 } *ARRAYP;
 
+enum Operation
+{
+    OP_LABEL,
+    OP_FUNCTION,
+    OP_ASSIGN,
+    OP_PLUS,
+    OP_MINUS,
+    OP_STAR,
+    OP_DIV,
+    OP_GOTO,
+    OP_RETURN,
+    OP_ARG,
+    OP_CALL,
+    OP_PARAM,
+    OP_GREATER,
+    OP_LESS,
+    OP_GE,
+    OP_LE,
+    OP_EQUAL,
+    OP_UE,
+    OP_READ,
+    OP_WRITE,
+    OP_DEC,
+	OP_BREAK,
+	OP_CONTINUE,
+};
+
+typedef struct CodeNode
+{
+    enum Operation op;
+    char opn1[10], opn2[10], result[10];
+    struct CodeNode *next, *pre;
+} * CodeNodeP;

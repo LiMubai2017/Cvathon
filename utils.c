@@ -31,6 +31,22 @@ void insertStrIntoArray(char *a, char **array)
     }
 }
 
+char *intToStr(int num)
+{
+    int len = getIntLen(num);
+    char *tempStr = (char *)malloc(sizeof(char) * (len + 2));
+    tempStr[0] = '#';
+    int i = len;
+    while (i > 0)
+    {
+        tempStr[i] = num % 10 + '0';
+        num /= 10;
+        i--;
+    }
+    tempStr[len + 1] = '\0';
+    return tempStr;
+}
+
 void log(char msg[]) {
     if(msg == NULL) return;
     char log_enable = 1;

@@ -1,0 +1,141 @@
+#include <stdlib.h>
+#include <string.h>
+typedef struct OffsetContainer{
+    int offset;
+} *OffsetPointer;
+
+OffsetPointer *v = NULL;
+OffsetPointer *t = NULL;
+
+int v_num=0;
+int t_num=0;
+
+void init(int v_number, int t_number)
+{
+    v_num = v_number;
+    t_num = t_number;
+    v = (OffsetPointer)malloc(sizeof(OffsetPointer) * (v_num + 1));
+    t = (OffsetPointer)malloc(sizeof(OffsetPointer) * (t_num + 1));
+    for(int i = 0; i <= v_num; i++) {
+        v[i] = NULL;
+    }
+    for(int i = 0; i <= t_num; i++) {
+        t[i] = NULL;
+    }
+}
+
+void updateAllOffset(int delta)
+{
+    for(int i = 1; i <= v_num; i++) {
+        if(v[i] != NULL) {
+            v[i]->offset += delta;
+        }
+    }
+    for(int i = 1; i <= t_num; i++) {
+        if(t[i] != NULL) {
+            t[i]->offset += delta;
+        }
+    }
+}
+
+int getOffset(char *name)
+{
+    if(name == NULL || (name[0] != 'v' && name[0] != 't')) {
+        printf("error in function getOffset, name: %s\n",name);
+        getchar();
+        exit(1);
+    }
+    if(name[0] == 'v') return _getVoffset(name);
+    if(name[0] == 't') return _getToffset(name);
+}
+
+//0 - not exist , 1 - exist
+int isInStack(char *name)
+{
+    if(name == NULL || (name[0] != 'v' && name[0] != 't')) {
+        printf("error in function isInStack, name: %s\n",name);
+        getchar();
+        exit(1);
+    }
+    int len = strlen(name);
+    int num = 0;
+    for(int i = 1 ;i < len; i++) {
+        num = num * 10 + (name[i] - '0');
+    }
+    if(name[0] == 'v' && v[num] != NULL) return 1;
+    if(name[0] == 't' && t[num] != NULL) return 1;
+    return 0;
+}
+
+void pushToStack(char *name)
+{
+    if(name == NULL || (name[0] != 'v' && name[0] != 't')) {
+        printf("error in function pushToStack, name: %s\n",name);
+        getchar();
+        exit(1);
+    }
+    int len = strlen(name);
+    int num = 0;
+    for(int i = 1 ;i < len; i++) {
+        num = num * 10 + (name[i] - '0');
+    }
+    updateAllOffset(4);
+    if(name[0] == 'v') {
+        v[num] = (OffsetPointer)malloc(sizeof(struct OffsetContainer));
+        v[num]->offset=0;
+    } else if(name[0] == 't') {
+        t[num] = (OffsetPointer)malloc(sizeof(struct OffsetContainer));
+        t[num]->offset=0;
+    }
+}
+
+//@return -1 for error
+int _getVoffset(char *name)
+{
+    int len = strlen(name);
+    int num = 0;
+    for(int i = 1 ;i < len; i++) {
+        num = num * 10 + (name[i] - '0');
+    }
+    if(num > v_num) {
+        printf("variable index out of num\n");
+        getchar();
+        exit(1);
+    }
+    if(v[num] != NULL) {
+        return v[num]->offset;
+    } else {
+        printf("v is null\n");
+        getchar();
+        exit(1);
+    }
+}
+
+//@return -1 for error
+int _getToffset(char *name)
+{
+    int len = strlen(name);
+    int num = 0;
+    for(int i = 1 ;i < len; i++) {
+        num = num * 10 + (name[i] - '0');
+    }
+    if(num > v_num) {
+        printf("temp index out of num\n");
+        getchar();
+        exit(1);
+    }
+    if(t[num] != NULL) {
+        return t[num]->offset;
+    } else {
+        printf("t is null\n");
+        getchar();
+        exit(1);
+    }
+}
+
+
+
+
+
+
+

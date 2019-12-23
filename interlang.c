@@ -4,38 +4,9 @@
 extern int getIntLen(int);
 extern void log(char *);
 extern int nestCodeBlock;
-
-enum Operation
-{
-    OP_LABEL,
-    OP_FUNCTION,
-    OP_ASSIGN,
-    OP_PLUS,
-    OP_MINUS,
-    OP_STAR,
-    OP_DIV,
-    OP_GOTO,
-    OP_RETURN,
-    OP_ARG,
-    OP_CALL,
-    OP_PARAM,
-    OP_GREATER,
-    OP_LESS,
-    OP_GE,
-    OP_LE,
-    OP_EQUAL,
-    OP_UE,
-    OP_READ,
-    OP_WRITE,
-    OP_DEC,
-};
-
-typedef struct CodeNode
-{
-    enum Operation op;
-    char opn1[10], opn2[10], result[10];
-    struct CodeNode *next, *pre;
-} * CodeNodeP;
+extern char *intToStr(int);
+extern void *translateInterCode(CodeNodeP );
+extern void printObjCode();
 
 void insertStrIntoArray(char*, char**);
 CodeNodeP translateExp(PEXP exp, char place[]);
@@ -47,6 +18,23 @@ int label_index = 0;
 CodeNodeP codeList[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
 CodeNodeP currentCode[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
 PEXP nodeToParse[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
+
+void transferInterToObj()
+{
+    log("start make obj code\n");
+
+    /*if (codeList[0] == NULL)
+    {
+        log("intermediate code unvailable\n");
+        exit(1);
+    }
+    CodeNodeP code = codeList[0];
+    while(code != NULL) {
+        translateInterCode(code);
+        code = code->next;
+    }
+    printObjCode();*/
+}
 
 void printCodeToFile()
 {
@@ -201,22 +189,6 @@ CodeNodeP getCode(enum Operation op, char opn1[], char opn2[], char result[])
     }
     temp->next = NULL;
     temp->pre = NULL;
-}
-
-char *intToStr(int num)
-{
-    int len = getIntLen(num);
-    char *tempStr = (char *)malloc(sizeof(char) * (len + 2));
-    tempStr[0] = '#';
-    int i = len;
-    while (i > 0)
-    {
-        tempStr[i] = num % 10 + '0';
-        num /= 10;
-        i--;
-    }
-    tempStr[len + 1] = '\0';
-    return tempStr;
 }
 
 char* getAdr(char *temp)
@@ -620,12 +592,15 @@ CodeNodeP translateExp(PEXP exp, char place[])
     case INC_PREFIX_NODE:
     {
         log("parse inc prefix");
+        char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
         char *alias = getVariableAlias(id_node->id.type_id);
-        CodeNodeP code1 = getCode(OP_PLUS, alias, one, t1);
+        CodeNodeP one_code = getCode(OP_ASSIGN,one,NULL,t_one);
+        CodeNodeP code1 = getCode(OP_PLUS, alias, t_one, t1);
         CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
-        tempCode = mergeCode(code1, code2);
+        tempCode = mergeCode(one_code, code1);
+        tempCode = mergeCode(tempCode, code2);
         if(place != NULL) {
             tempCode = mergeCode(tempCode, getCode(OP_ASSIGN, alias, NULL,place));
         }
@@ -634,14 +609,17 @@ CodeNodeP translateExp(PEXP exp, char place[])
     case INC_SUFFIX_NODE:
     {
         log("parse inc suffix");
+        char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
         char *alias = getVariableAlias(id_node->id.type_id);
         if(place != NULL) {
             tempCode = getCode(OP_ASSIGN, alias, NULL,place);
         }
-        CodeNodeP code1 = getCode(OP_PLUS, alias, one, t1);
+        CodeNodeP one_code = getCode(OP_ASSIGN,one,NULL,t_one);
+        CodeNodeP code1 = getCode(OP_PLUS, alias, t_one, t1);
         CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        tempCode = mergeCode(tempCode, one_code);
         tempCode = mergeCode(tempCode, code1);
         tempCode = mergeCode(tempCode, code2);
         break;
@@ -649,12 +627,15 @@ CodeNodeP translateExp(PEXP exp, char place[])
     case DEC_PREFIX_NODE:
     {
         log("parse dec prefix");
+        char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
         char *alias = getVariableAlias(id_node->id.type_id);
-        CodeNodeP code1 = getCode(OP_MINUS, alias, one, t1);
+        CodeNodeP one_code = getCode(OP_ASSIGN,one,NULL,t_one);
+        CodeNodeP code1 = getCode(OP_MINUS, alias, t_one, t1);
         CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
-        tempCode = mergeCode(code1, code2);
+        tempCode = mergeCode(one_code , code1);
+        tempCode = mergeCode(tempCode, code2);
         if(place != NULL) {
             tempCode = mergeCode(tempCode, getCode(OP_ASSIGN, alias, NULL,place));
         }
@@ -663,14 +644,17 @@ CodeNodeP translateExp(PEXP exp, char place[])
     case DEC_SUFFIX_NODE:
     {
         log("parse dec suffix");
+        char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
         char *alias = getVariableAlias(id_node->id.type_id);
         if(place != NULL) {
             tempCode = getCode(OP_ASSIGN, alias, NULL,place);
         }
+        CodeNodeP one_code = getCode(OP_ASSIGN,one,NULL,t_one);
         CodeNodeP code1 = getCode(OP_MINUS, alias, one, t1);
         CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
+        tempCode = mergeCode(tempCode, one_code);
         tempCode = mergeCode(tempCode, code1);
         tempCode = mergeCode(tempCode, code2);
         break;
@@ -841,6 +825,14 @@ CodeNodeP translateStmt(PEXP exp)
         tempCode = translateExp(exp, NULL);
         addToList(tempCode);
         break;
+    case BREAK_NODE:
+        tempCode = getCode(OP_BREAK,NULL,NULL,NULL);
+        addToList(tempCode);
+        break;
+    case CONTINUE_NODE:
+        tempCode = getCode(OP_CONTINUE,NULL,NULL,NULL);
+        addToList(tempCode);
+        break;
     case RETURN_NODE:
     {
         switch (exp->return_exp.returnType)
@@ -1003,6 +995,42 @@ void parsePreCode()
     }
     case FOR_NODE:
     {
+        log("parse for");
+        char *label1 = newLabel();
+        char *label2 = newLabel();
+        char *label3 = newLabel();
+        char *label4 = newLabel();
+        CodeNodeP current = codeList[nestCodeBlock+1];
+        while(current != NULL) {
+            if(current->op == OP_BREAK) {
+                current->op = OP_GOTO;
+                strcpy(current->result,label3);
+            }
+            if(current->op == OP_CONTINUE) {
+                current->op = OP_GOTO;
+                strcpy(current->result,label4);
+            }
+            current = current->next;
+        }
+
+        CodeNodeP code1 = translateExp(node->for_exp.p1, NULL);
+        CodeNodeP code2 = translateCond(node->for_exp.p2, label2, label3);
+        CodeNodeP code3 = codeList[nestCodeBlock+1];
+        CodeNodeP code4 = translateExp(node->for_exp.p3, NULL);
+        CodeNodeP code_label1 = getCode(OP_LABEL,NULL,NULL,label1);
+        CodeNodeP code_label2 = getCode(OP_LABEL,NULL,NULL,label2);
+        CodeNodeP code_label3 = getCode(OP_LABEL,NULL,NULL,label3);
+        CodeNodeP code_label4 = getCode(OP_LABEL,NULL,NULL,label4);
+        CodeNodeP code_goto = getCode(OP_GOTO, NULL,NULL,label1);
+        tempCode = mergeCode(code1 , code_label1);
+        tempCode = mergeCode(tempCode , code2);
+        tempCode = mergeCode(tempCode, code_label2);
+        tempCode = mergeCode(tempCode , code3);
+        tempCode = mergeCode(tempCode, code_label4);
+        tempCode = mergeCode(tempCode, code4);
+        tempCode = mergeCode(tempCode, code_goto);
+        tempCode = mergeCode(tempCode, code_label3);
+        addToList(tempCode);
         break;
     }
     case WHILE_NODE:
@@ -1011,6 +1039,20 @@ void parsePreCode()
         char *label1 = newLabel();
         char *label2 = newLabel();
         char *label3 = newLabel();
+
+        CodeNodeP current = codeList[nestCodeBlock+1];
+        while(current != NULL) {
+            if(current->op == OP_BREAK) {
+                current->op = OP_GOTO;
+                strcpy(current->result,label3);
+            }
+            if(current->op == OP_CONTINUE) {
+                current->op = OP_GOTO;
+                strcpy(current->result,label1);
+            }
+            current = current->next;
+        }
+
         CodeNodeP code1 = translateCond(node->ptr.pExp1, label2, label3);
         CodeNodeP code2 = codeList[nestCodeBlock+1];
         CodeNodeP code_label1 = getCode(OP_LABEL,NULL,NULL,label1);
@@ -1022,6 +1064,8 @@ void parsePreCode()
         tempCode = mergeCode(tempCode, code2);
         tempCode = mergeCode(tempCode, code_goto);
         tempCode = mergeCode(tempCode, code_label3);
+
+
         addToList(tempCode);
         break;
     }
