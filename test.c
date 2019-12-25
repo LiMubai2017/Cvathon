@@ -1,10 +1,23 @@
+int test(int a)
+{
+    int i,ans
+    ans = 0
+    for(i=1;i<=a;i++)
+    {
+        ans = ans + i
+    }
+    return ans
+}
+
 int main()
 {
-    int a,i
-    a=10
-    while(a>0)
-    {
-        write(a--)
-    }
+    int a,b
+    a=5
+    b=10
+    a=test(b)
+    write(a)
+    write(b++)
+    write(b)
+    write(++b)
     return 0
 }

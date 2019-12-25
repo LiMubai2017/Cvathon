@@ -7,7 +7,6 @@ extern void log(char*);
 extern char *intToStr(int);
 extern int isInStack(char *name);
 extern void pushToStack(char *name);
-extern void popStack();
 extern int getStackSize();
  
 
@@ -18,6 +17,8 @@ char ret[] = {"_ret: .asciiz \"\\n\"\n"};
 char data[] = {".data\n"};
 char global_main[] = {".globl main\n"};
 char text[] = {".text\n"};
+
+int inMain = 0;
 
 enum MIPS32_OP {MIPS_LI, MIPS_SW, MIPS_LW, MIPS_MOVE, MIPS_ADD, MIPS_SUB, MIPS_MUL, MIPS_DIV, MIPS_JR, MIPS_J,MIPS_JAL,
                 MIPS_MFLO,  MIPS_BEQ, MIPS_BNE, MIPS_BGT, MIPS_BGE, MIPS_BLE, MIPS_BLT, MIPS_LABEL, MIPS_PUSH, MIPS_POP};
@@ -326,30 +327,19 @@ void *translateInterCode(CodeNodeP codeNode)
         break;
     }
     case OP_LABEL:
-    case OP_FUNCTION:
     {
         tempCode = getMIPScode(MIPS_LABEL, result, NULL, NULL);
-        if(strcmp(result , "main") == 0) {
-            char *code = (char*)malloc(sizeof(char)*20);
-            strcpy(code, "addi $sp, $sp, -");
-            char *size =  intToStr(getStackSize());
-            strcat(code, size);
-            tempCode = mergeObjCode(tempCode , getObjCode(code));   
-        }
         break;
     }
     case OP_READ:
     {
         log("OBJ translate read");
         code1 = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
-        updateAllOffset(4);
-
         code2 = getMIPScode(MIPS_SW,"$ra","0",NULL);
         code3 = getObjCode("jal read");
         code4 = getMIPScode(MIPS_LW,"$ra","0",NULL);
 
         ObjCodeP code5 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
-        updateAllOffset(-4);
 
 
         tempCode = mergeObjCode(tempCode , code1);
@@ -373,14 +363,10 @@ void *translateInterCode(CodeNodeP codeNode)
         code1 = getMIPScode(MIPS_LW, "$t2", intToStr(getOffset(result)),NULL);
         code2 = getMIPScode(MIPS_MOVE, "$a0", "$t2", NULL);
         code3 = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
-        updateAllOffset(4);
-
         code4 = getMIPScode(MIPS_SW,"$ra","0",NULL);
         ObjCodeP code5 = getObjCode("jal write");
         ObjCodeP code6 = getMIPScode(MIPS_LW,"$ra","0",NULL);
-
         ObjCodeP code7 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
-        updateAllOffset(-4);
 
         tempCode = mergeObjCode(tempCode, code1);
         tempCode = mergeObjCode(tempCode, code2);
@@ -395,7 +381,80 @@ void *translateInterCode(CodeNodeP codeNode)
     {
         log("translate goto");
         tempCode = getMIPScode(MIPS_J, result, NULL, NULL);
+        break;
     }
+
+    case OP_CALL:
+    {
+        CodeNodeP precode = codeNode->pre;
+        int count = 0;
+
+        code1 = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
+        updateAllOffset(4);
+        code2 = getMIPScode(MIPS_SW,"$ra","0",NULL);
+        tempCode = mergeObjCode(tempCode , code1);
+        tempCode = mergeObjCode(tempCode , code2);
+        
+        while(precode!=NULL && precode->op == OP_ARG) {
+            code1 = getMIPScode(MIPS_LW , "$t1" , intToStr(getOffset(precode->result) + count*4),NULL);
+            code2 = getMIPScode(MIPS_PUSH , NULL, NULL, NULL);
+            code3 = getMIPScode(MIPS_SW, "$t1", "0", NULL);
+            tempCode = mergeObjCode(tempCode,code1);
+            tempCode = mergeObjCode(tempCode,code2);
+            tempCode = mergeObjCode(tempCode,code3);
+            precode = precode->pre;
+            count++;
+        }
+        
+        code3 = getMIPScode(MIPS_JAL, opn1,NULL,NULL);
+        code4 = getMIPScode(MIPS_LW,"$ra","0",NULL);
+        ObjCodeP code5 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
+        updateAllOffset(-4);
+        tempCode = mergeObjCode(tempCode , code3);
+        tempCode = mergeObjCode(tempCode , code4);
+        tempCode = mergeObjCode(tempCode , code5);
+        if(strcmp(result,"")!=0) {
+            code1 = getMIPScode(MIPS_SW, "$v0", intToStr(getOffset(result)), NULL);
+            tempCode = mergeObjCode(tempCode,code1);
+        }
+        break;
+    }
+    case OP_FUNCTION:
+    {
+        tempCode = getMIPScode(MIPS_LABEL, result, NULL, NULL);
+        if(strcmp(result , "main") == 0) {
+            char *code = (char*)malloc(sizeof(char)*20);
+            strcpy(code, "addi $sp, $sp, -");
+            char *size =  intToStr(getStackSize());
+            strcat(code, size);
+            tempCode = mergeObjCode(tempCode , getObjCode(code));   
+            inMain = 1;
+        } else {
+            inMain = 0;
+        }
+        CodeNodeP nextcode = codeNode->next;
+        int count=0;
+        while(nextcode != NULL && nextcode->op==OP_PARAM) {
+            count++;
+            nextcode = nextcode->next;
+        }
+        nextcode = codeNode->next;
+        while(count > 0) {
+            code1 = getMIPScode(MIPS_LW, "$t1", "0", NULL);
+            code2 = getMIPScode(MIPS_SW, "$t1", intToStr(getOffset(nextcode->result) + count*4), NULL);
+            code3 = getMIPScode(MIPS_POP, NULL, NULL, NULL);
+            tempCode = mergeObjCode(tempCode, code1);
+            tempCode = mergeObjCode(tempCode, code2);
+            tempCode = mergeObjCode(tempCode, code3);
+            count--;
+        }
+        break;
+    }
+
+    case OP_ARG:
+        break;
+    case OP_PARAM:
+        break;
     default:
         break;
     }

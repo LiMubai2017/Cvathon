@@ -102,6 +102,7 @@ function : VOID ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION
 		 | INT ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
 		 | CHAR ID LP  RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
 		 | FLOAT ID LP RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=NULL;strcpy($$->function.function_name,$2);}
+		 | VOID ID LP function_param RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=VOID_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
 		 | INT ID LP function_param RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=INT_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
 		 | CHAR ID LP function_param RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=CHAR_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}
 		 | FLOAT ID LP function_param RP {$$=(PEXP)malloc(sizeof(struct Exp)); $$->kind=FUNCTION_DECLARE_NODE;$$->function.returnType=FLOAT_FUNCTION;$$->function.pExp=$4;strcpy($$->function.function_name,$2);}

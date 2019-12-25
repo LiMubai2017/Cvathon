@@ -9,6 +9,8 @@ extern void *translateInterCode(CodeNodeP );
 extern void printObjCode();
 extern void init(int , int );
 
+void addFunctionSize(char *function, int size);
+
 void insertStrIntoArray(char*, char**);
 CodeNodeP translateExp(PEXP exp, char place[]);
 CodeNodeP _translateArrayDeclare(enum node_kind kind , PEXP array_node);
@@ -1101,3 +1103,4 @@ void parsePreCode()
     }
     codeList[nestCodeBlock + 1] = NULL;
 }
+

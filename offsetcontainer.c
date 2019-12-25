@@ -13,6 +13,8 @@ int getStackSize();
 OffsetPointer *v = NULL;
 OffsetPointer *t = NULL;
 
+extern int inMain;
+
 int v_num=0;
 int t_num=0;
 
@@ -67,8 +69,12 @@ int getOffset(char *name)
         getchar();
         exit(1);
     }
-    if(name[0] == 'v') return _getVoffset(name);
-    if(name[0] == 't') return _getToffset(name);
+    int delta = 0;
+    if(!inMain) {
+        delta = 4;
+    } 
+    if(name[0] == 'v') return _getVoffset(name) + delta;
+    if(name[0] == 't') return _getToffset(name) + delta;
 }
 
 //0 - not exist , 1 - exist
