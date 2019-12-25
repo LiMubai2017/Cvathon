@@ -1,8 +1,10 @@
 int main()
 {
-    int a,b
-    char c
-    
-    a=b+c
+    int a,i
+    a=10
+    while(a>0)
+    {
+        write(a--)
+    }
     return 0
 }

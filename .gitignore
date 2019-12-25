@@ -3,3 +3,4 @@ cvathon.tab.c
 cvathon.tab.h
 lex.yy.c
 objcode.exe
+offsetcontainer.exe

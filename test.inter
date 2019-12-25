@@ -1,18 +1,10 @@
-FUNCTION test :
-PARAM v1
-t2 := v1
-t3 := #1
-t1 := t2 + t3
-RETURN t1
 FUNCTION main :
-DEC v4 #800
+t1 := #10
+v1 := t1
+t2 := v1
+WRITE t2
+t3 := #1
+t4 := v2 + t3
+v2 := t4
 t5 := #0
-t6 := #0
-t7 := t5 * #80
-t8 := t6 * #4
-t9 := t7 + t8
-t4 := &v4 + t9
-t10 := v2
-*t4 := t10
-t11 := #0
-RETURN t11
+RETURN t5

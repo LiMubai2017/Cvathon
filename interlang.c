@@ -4,9 +4,10 @@
 extern int getIntLen(int);
 extern void log(char *);
 extern int nestCodeBlock;
-extern char *intToStr(int);
+extern char *intToNumStr(int);
 extern void *translateInterCode(CodeNodeP );
 extern void printObjCode();
+extern void init(int , int );
 
 void insertStrIntoArray(char*, char**);
 CodeNodeP translateExp(PEXP exp, char place[]);
@@ -14,6 +15,7 @@ CodeNodeP _translateArrayDeclare(enum node_kind kind , PEXP array_node);
 
 int temp_index = 0;
 int label_index = 0;
+extern v_index;
 
 CodeNodeP codeList[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
 CodeNodeP currentCode[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
@@ -23,17 +25,21 @@ void transferInterToObj()
 {
     log("start make obj code\n");
 
-    /*if (codeList[0] == NULL)
+    if (codeList[0] == NULL)
     {
         log("intermediate code unvailable\n");
         exit(1);
     }
+
+    init(v_index, temp_index);
+
     CodeNodeP code = codeList[0];
+
     while(code != NULL) {
         translateInterCode(code);
         code = code->next;
     }
-    printObjCode();*/
+    printObjCode();
 }
 
 void printCodeToFile()
@@ -55,6 +61,8 @@ void printCodeToFile()
     {
         log("file opened for writing \n");
     }
+
+    init(v_index, temp_index);
 
     CodeNodeP current = codeList[0];
     while (current != NULL)
@@ -356,7 +364,7 @@ CodeNodeP translateArgs(PEXP arg_node, char **arg_list)
 
 CodeNodeP translateExp(PEXP exp, char place[])
 {
-    log("start translate exp");
+    // log("start translate exp");
     CodeNodeP tempCode = NULL;
     char zero[] = "#0";
     char one[] = "#1";
@@ -365,7 +373,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
     case INTEGER_NODE:
     {
         int value = exp->type_integer;
-        char *value_str = intToStr(value);
+        char *value_str = intToNumStr(value);
         tempCode = getCode(OP_ASSIGN, value_str, NULL, place);
         break;
     }
@@ -406,7 +414,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
             char *t_offset = newTemp();
             CodeNodeP code1 = translateExp(exp->array.pExp1 , t1);
             CodeNodeP code2 = translateExp(exp->array.pExp2 , t2);
-            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2*4),t1_offset);
+            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToNumStr(index2*4),t1_offset);
             CodeNodeP offset2_code = getCode(OP_STAR, t2, "#4", t2_offset);
             CodeNodeP offset_code = getCode(OP_PLUS, t1_offset, t2_offset, t_offset);
             char *addr = getAdr(alias);
@@ -431,8 +439,8 @@ CodeNodeP translateExp(PEXP exp, char place[])
             CodeNodeP code1 = translateExp(exp->array.pExp1 , t1);
             CodeNodeP code2 = translateExp(exp->array.pExp2 , t2);
             CodeNodeP code3 = translateExp(exp->array.pExp3 , t3);
-            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToStr(index2*index3*4),t1_offset);
-            CodeNodeP offset2_code = getCode(OP_STAR, t2, intToStr(index3*4), t2_offset);
+            CodeNodeP offset1_code = getCode(OP_STAR, t1, intToNumStr(index2*index3*4),t1_offset);
+            CodeNodeP offset2_code = getCode(OP_STAR, t2, intToNumStr(index3*4), t2_offset);
             CodeNodeP offset3_code = getCode(OP_STAR, t3, "#4", t3_offset);
             CodeNodeP offset_temp_code = getCode(OP_PLUS, t1_offset, t2_offset, t_offset_temp);
             CodeNodeP offset_code = mergeCode(offset_temp_code , getCode(OP_PLUS, t_offset_temp, t3_offset, t_offset));
@@ -591,7 +599,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
     }
     case INC_PREFIX_NODE:
     {
-        log("parse inc prefix");
+        // log("parse inc prefix");
         char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
@@ -608,7 +616,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
     }
     case INC_SUFFIX_NODE:
     {
-        log("parse inc suffix");
+        // log("parse inc suffix");
         char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
@@ -626,7 +634,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
     }
     case DEC_PREFIX_NODE:
     {
-        log("parse dec prefix");
+        // log("parse dec prefix");
         char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
@@ -643,7 +651,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
     }
     case DEC_SUFFIX_NODE:
     {
-        log("parse dec suffix");
+        // log("parse dec suffix");
         char *t_one = newTemp();
         char *t1 = newTemp();
         PEXP id_node = exp->ptr.pExp1;
@@ -652,7 +660,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
             tempCode = getCode(OP_ASSIGN, alias, NULL,place);
         }
         CodeNodeP one_code = getCode(OP_ASSIGN,one,NULL,t_one);
-        CodeNodeP code1 = getCode(OP_MINUS, alias, one, t1);
+        CodeNodeP code1 = getCode(OP_MINUS, alias, t_one, t1);
         CodeNodeP code2 = getCode(OP_ASSIGN, t1, NULL, alias);
         tempCode = mergeCode(tempCode, one_code);
         tempCode = mergeCode(tempCode, code1);
@@ -661,7 +669,7 @@ CodeNodeP translateExp(PEXP exp, char place[])
     }
     case FUNCTION_FIRE_NODE:
     {
-        log("parse function fire\n");
+        // log("parse function fire\n");
         char function[33];
         strcpy(function, exp->fire.fire_id);
         if(exp->fire.valueList==NULL) {
@@ -805,7 +813,7 @@ CodeNodeP translateCond(PEXP exp, char *label_true, char *label_false)
 
 CodeNodeP translateStmt(PEXP exp)
 {
-    log("start translate stmt\n");
+    // log("start translate stmt\n");
     CodeNodeP tempCode = NULL;
     switch (exp->kind)
     {
@@ -911,7 +919,7 @@ CodeNodeP translateStmt(PEXP exp)
 
 CodeNodeP _translateArrayDeclare(enum node_kind kind , PEXP array_node)
 {
-    log("parse declare array\n");
+    // log("parse declare array\n");
     int size;
     switch (kind)
     {
@@ -942,13 +950,13 @@ CodeNodeP _translateArrayDeclare(enum node_kind kind , PEXP array_node)
         break;
     }
     char *alias = getVariableAlias(array_node->id.type_id);
-    char *size_str = intToStr(whole_size);
+    char *size_str = intToNumStr(whole_size);
     return getCode(OP_DEC, size_str,NULL,alias);
 }
 
 void parsePreCode()
 {
-    log("start parse pre code\n");
+    // log("start parse pre code\n");
     if (nodeToParse[nestCodeBlock] == NULL)
     {
         return;
@@ -960,7 +968,7 @@ void parsePreCode()
     {
     case IF_NODE:
     {
-        log("parse if\n");
+        // log("parse if\n");
         char *label1, *label2;
         label1 = newLabel();
         label2 = newLabel();
@@ -977,7 +985,7 @@ void parsePreCode()
     }
     case ELSE_NODE:
     {
-        log("parse else\n");
+        // log("parse else\n");
         char *label3 = newLabel();
         CodeNodeP code3 = codeList[nestCodeBlock+1];
         CodeNodeP code_label3 = getCode(OP_LABEL,NULL,NULL,label3);
@@ -995,7 +1003,7 @@ void parsePreCode()
     }
     case FOR_NODE:
     {
-        log("parse for");
+        // log("parse for");
         char *label1 = newLabel();
         char *label2 = newLabel();
         char *label3 = newLabel();
@@ -1035,7 +1043,7 @@ void parsePreCode()
     }
     case WHILE_NODE:
     {
-        log("parse while\n");
+        // log("parse while\n");
         char *label1 = newLabel();
         char *label2 = newLabel();
         char *label3 = newLabel();
@@ -1071,7 +1079,7 @@ void parsePreCode()
     }
     case FUNCTION_DECLARE_NODE:
     {
-        log("parse function declare\n");
+        // log("parse function declare\n");
         PEXP function_node = nodeToParse[nestCodeBlock];
         CodeNodeP code1 = NULL;
         CodeNodeP code2 = codeList[nestCodeBlock+1];

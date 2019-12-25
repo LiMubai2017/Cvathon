@@ -31,7 +31,7 @@ void insertStrIntoArray(char *a, char **array)
     }
 }
 
-char *intToStr(int num)
+char *intToNumStr(int num)
 {
     int len = getIntLen(num);
     char *tempStr = (char *)malloc(sizeof(char) * (len + 2));
@@ -44,6 +44,21 @@ char *intToStr(int num)
         i--;
     }
     tempStr[len + 1] = '\0';
+    return tempStr;
+}
+
+char *intToStr(int num)
+{
+    int len = getIntLen(num);
+    char *tempStr = (char *)malloc(sizeof(char) * (len + 1));
+    int i = len-1;
+    while (i >= 0)
+    {
+        tempStr[i] = num % 10 + '0';
+        num /= 10;
+        i--;
+    }
+    tempStr[len ] = '\0';
     return tempStr;
 }
 
