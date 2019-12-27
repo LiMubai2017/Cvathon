@@ -8,7 +8,6 @@ extern char *intToStr(int);
 extern int isInStack(char *name);
 extern void pushToStack(char *name);
 extern int getStackSize();
- 
 
 char read[] = {"read:\n  li $v0, 4\n  la $a0, _prompt \n  syscall\n  li $v0, 5\n  syscall\n  jr $ra\n"};
 char write[] = {"write:\n  li $v0, 1\n  syscall\n  li $v0, 4\n  la $a0, _ret\n  syscall\n  move $v0, $0\n  jr $ra\n"};
@@ -20,7 +19,7 @@ char text[] = {".text\n"};
 
 int inMain = 0;
 
-enum MIPS32_OP {MIPS_LI, MIPS_SW, MIPS_LW, MIPS_MOVE, MIPS_ADD, MIPS_SUB, MIPS_MUL, MIPS_DIV, MIPS_JR, MIPS_J,MIPS_JAL,
+enum MIPS32_OP {MIPS_LI, MIPS_SW, MIPS_SW_NORMAL, MIPS_LW, MIPS_LW_NORMAL,MIPS_MOVE, MIPS_ADD, MIPS_SUB, MIPS_MUL, MIPS_DIV, MIPS_JR, MIPS_J,MIPS_JAL,
                 MIPS_MFLO,  MIPS_BEQ, MIPS_BNE, MIPS_BGT, MIPS_BGE, MIPS_BLE, MIPS_BLT, MIPS_LABEL, MIPS_PUSH, MIPS_POP};
 
 typedef struct ObjCode
@@ -131,6 +130,26 @@ int isStrNum(char *str)
     }
 }
 
+// 1-array addr , 0-not
+int isArrayAddr(char *str)
+{
+    if(str[0] == '&') {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+// 1-array value , 0-not
+int isArrayValue(char *str)
+{
+    if(str[0] == '*') {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 char* deleteNumFlag(char *num)
 {
     int len = strlen(num);
@@ -141,32 +160,92 @@ char* deleteNumFlag(char *num)
     return temp;
 }
 
+char* deleteAddrFlag(char *addr)
+{
+    int len = strlen(addr);
+    char *temp = (char*)malloc(sizeof(char)*len);
+    for(int i = 0; i < len; i++) {
+        temp[i] = addr[i+1];
+    }
+    return temp;
+}
+
+char* deleteValueFlag(char *value)
+{
+    int len = strlen(value);
+    char *temp = (char*)malloc(sizeof(char)*len);
+    for(int i = 0; i < len; i++) {
+        temp[i] = value[i+1];
+    }
+    return temp;
+}
+
 void *translateInterCode(CodeNodeP codeNode)
 {
     char *opn1 = codeNode->opn1;
     char *opn2 = codeNode->opn2;
     char *result = codeNode->result;
-    ObjCodeP code1=NULL, code2=NULL, code3=NULL, code4=NULL, tempCode=NULL;
+    ObjCodeP code1=NULL, code2=NULL, code3=NULL, code4=NULL,code5=NULL, tempCode=NULL;
     switch (codeNode->op)
     {
     case OP_ASSIGN:
     {
         log("OBJ translate assign");
-        if(!isInStack(result)) {
-            log("not in stack");
-            pushToStack(result);
-            tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
-        }
+        // if(!isInStack(result)) {
+        //     log("not in stack");
+        //     pushToStack(result);
+        //     tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
+        // }
 
         if(isStrNum(opn1)) {
             code1 = getMIPScode(MIPS_LI,"$t3",deleteNumFlag(opn1),NULL);
-            code2 = getMIPScode(MIPS_SW,"$t3",intToStr(getOffset(result)),NULL);
+            if(isArrayValue(result)) {
+                code2 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))), NULL);
+                code3 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+            } else {
+                code2 = getMIPScode(MIPS_SW,"$t3",intToStr(getOffset(result)),NULL);
+                code3 = NULL;
+            }
             tempCode = mergeObjCode(tempCode, code1);
             tempCode = mergeObjCode(tempCode, code2);
+            tempCode = mergeObjCode(tempCode, code3);
+        } else if(isArrayAddr(opn1)) {
+            code1 = getMIPScode(MIPS_LI, "$t2", intToStr(getOffset(deleteAddrFlag(opn1))), NULL);
+            code2 = getMIPScode(MIPS_ADD, "$t3" , "$sp" , "$t2");
+            if(isArrayValue(result)) {
+                code3 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))), NULL);
+                code4 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+            } else {
+                code3 = getMIPScode(MIPS_SW,"$t3",intToStr(getOffset(result)),NULL);
+                code4 = NULL;
+            }
+            tempCode = mergeObjCode(tempCode, code1);
+            tempCode = mergeObjCode(tempCode, code2);
+            tempCode = mergeObjCode(tempCode, code3);
+            tempCode = mergeObjCode(tempCode, code4);
+        } else if(isArrayValue(opn1)) {
+            code1 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(opn1))), NULL);
+            code2 = getMIPScode(MIPS_LW_NORMAL, "$t3", "($t1)", NULL);
+            if(isArrayValue(result)) {
+                code3 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))), NULL);
+                code4 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+            } else {
+                code3 = getMIPScode(MIPS_SW,"$t3",intToStr(getOffset(result)),NULL);
+                code4 = NULL;
+            }
+            tempCode = mergeObjCode(tempCode, code1);
+            tempCode = mergeObjCode(tempCode, code2);
+            tempCode = mergeObjCode(tempCode, code3);
+            tempCode = mergeObjCode(tempCode, code4);
         } else {
-            code1 = getMIPScode(MIPS_LW,"$t1",intToStr(getOffset(opn1)),NULL);
-            code2 = getMIPScode(MIPS_MOVE, "$t3", "$t1", NULL);
-            code3 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+            code1 = getMIPScode(MIPS_LW,"$t3",intToStr(getOffset(opn1)),NULL);
+            if(isArrayValue(result)) {
+                code2 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))), NULL);
+                code3 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+            } else {
+                code2 = getMIPScode(MIPS_SW,"$t3",intToStr(getOffset(result)),NULL);
+                code3 = NULL;
+            }
             tempCode = mergeObjCode(tempCode, code1);
             tempCode = mergeObjCode(tempCode, code2);
             tempCode = mergeObjCode(tempCode, code3);
@@ -176,81 +255,110 @@ void *translateInterCode(CodeNodeP codeNode)
     case OP_PLUS:
     {
         log("OBJ translate plus");
-        if(!isInStack(result)) {
-            log("not in stack");
-            pushToStack(result);
-            tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
-        }
+        // if(!isInStack(result)) {
+        //     log("not in stack");
+        //     pushToStack(result);
+        //     tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
+        // }
 
         code1 = getMIPScode(MIPS_LW, "$t1",intToStr(getOffset(opn1)),NULL);
         code2 = getMIPScode(MIPS_LW, "$t2",intToStr(getOffset(opn2)),NULL);
         code3 = getMIPScode(MIPS_ADD, "$t3","$t1","$t2");
-        code4 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        if(isArrayValue(result)) {
+            code4 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))),NULL);
+            code5 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+        } else {
+            code4 = NULL;
+            code5 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        }
         tempCode = mergeObjCode(tempCode, code1);
         tempCode = mergeObjCode(tempCode, code2);
         tempCode = mergeObjCode(tempCode, code3);
         tempCode = mergeObjCode(tempCode, code4);
+        tempCode = mergeObjCode(tempCode, code5);
         break;
     }
     case OP_MINUS:
     {
         log("OBJ translate minus");
-        if(!isInStack(result)) {
-            log("not in stack");
-            pushToStack(result);
-            tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
-        }
+        // if(!isInStack(result)) {
+        //     log("not in stack");
+        //     pushToStack(result);
+        //     tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
+        // }
 
         code1 = getMIPScode(MIPS_LW, "$t1",intToStr(getOffset(opn1)),NULL);
         code2 = getMIPScode(MIPS_LW, "$t2",intToStr(getOffset(opn2)),NULL);
         code3 = getMIPScode(MIPS_SUB, "$t3","$t1","$t2");
-        code4 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        if(isArrayValue(result)) {
+            code4 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))),NULL);
+            code5 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+        } else {
+            code4 = NULL;
+            code5 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        }
         tempCode = mergeObjCode(tempCode, code1);
         tempCode = mergeObjCode(tempCode, code2);
         tempCode = mergeObjCode(tempCode, code3);
         tempCode = mergeObjCode(tempCode, code4);
+        tempCode = mergeObjCode(tempCode, code5);
         break;
     }
     case OP_STAR:
     {
         log("OBJ translate star");
-        if(!isInStack(result)) {
-            log("not in stack");
-            pushToStack(result);
-            tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
-        }
+        // if(!isInStack(result)) {
+        //     log("not in stack");
+        //     pushToStack(result);
+        //     tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
+        // }
 
         code1 = getMIPScode(MIPS_LW, "$t1",intToStr(getOffset(opn1)),NULL);
         code2 = getMIPScode(MIPS_LW, "$t2",intToStr(getOffset(opn2)),NULL);
         code3 = getMIPScode(MIPS_MUL, "$t3","$t1","$t2");
-        code4 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        if(isArrayValue(result)) {
+            code4 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))),NULL);
+            code5 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+        } else {
+            code4 = NULL;
+            code5 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        }
         tempCode = mergeObjCode(tempCode, code1);
         tempCode = mergeObjCode(tempCode, code2);
         tempCode = mergeObjCode(tempCode, code3);
         tempCode = mergeObjCode(tempCode, code4);
+        tempCode = mergeObjCode(tempCode, code5);
         break;
     }
     case OP_DIV:
     {
         log("OBJ translate div");
-        if(!isInStack(result)) {
-            log("not in stack");
-            pushToStack(result);
-            tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
-        }
+        // if(!isInStack(result)) {
+        //     log("not in stack");
+        //     pushToStack(result);
+        //     tempCode = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
+        // }
 
         code1 = getMIPScode(MIPS_LW, "$t1",intToStr(getOffset(opn1)),NULL);
         code2 = getMIPScode(MIPS_LW, "$t2",intToStr(getOffset(opn2)),NULL);
         code3 = getMIPScode(MIPS_MUL, "$t3","$t1","$t2");
         code4 = getMIPScode(MIPS_DIV, "$t1", "$t2",NULL);
-        ObjCodeP code5 = getMIPScode(MIPS_MFLO, "$t3", NULL, NULL);
-        ObjCodeP code6 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        code5 = getMIPScode(MIPS_MFLO, "$t3", NULL, NULL);
+        ObjCodeP code6,code7;
+        if(isArrayValue(result)) {
+            code6 = getMIPScode(MIPS_LW, "$t1", intToStr(getOffset(deleteValueFlag(result))),NULL);
+            code7 = getMIPScode(MIPS_SW_NORMAL, "$t3", "($t1)",NULL);
+        } else {
+            code6 = NULL;
+            code7 = getMIPScode(MIPS_SW, "$t3", intToStr(getOffset(result)),NULL);
+        }
         tempCode = mergeObjCode(tempCode, code1);
         tempCode = mergeObjCode(tempCode, code2);
         tempCode = mergeObjCode(tempCode, code3);
         tempCode = mergeObjCode(tempCode, code4);
         tempCode = mergeObjCode(tempCode, code5);
         tempCode = mergeObjCode(tempCode, code6);
+        tempCode = mergeObjCode(tempCode, code7);
         break;
     }
     case OP_RETURN:
@@ -339,7 +447,7 @@ void *translateInterCode(CodeNodeP codeNode)
         code3 = getObjCode("jal read");
         code4 = getMIPScode(MIPS_LW,"$ra","0",NULL);
 
-        ObjCodeP code5 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
+        code5 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
 
 
         tempCode = mergeObjCode(tempCode , code1);
@@ -348,11 +456,11 @@ void *translateInterCode(CodeNodeP codeNode)
         tempCode = mergeObjCode(tempCode , code4);
         tempCode = mergeObjCode(tempCode , code5);
 
-        if(!isInStack(result)) {
-            log("not in stack");
-            pushToStack(result);
-            tempCode = mergeObjCode(tempCode , getMIPScode(MIPS_PUSH,NULL,NULL,NULL));
-        }
+        // if(!isInStack(result)) {
+        //     log("not in stack");
+        //     pushToStack(result);
+        //     tempCode = mergeObjCode(tempCode , getMIPScode(MIPS_PUSH,NULL,NULL,NULL));
+        // }
         ObjCodeP code6 = getMIPScode(MIPS_SW,"$v0",intToStr(getOffset(result)),NULL);
         tempCode = mergeObjCode(tempCode , code6);
         break;
@@ -364,7 +472,7 @@ void *translateInterCode(CodeNodeP codeNode)
         code2 = getMIPScode(MIPS_MOVE, "$a0", "$t2", NULL);
         code3 = getMIPScode(MIPS_PUSH,NULL,NULL,NULL);
         code4 = getMIPScode(MIPS_SW,"$ra","0",NULL);
-        ObjCodeP code5 = getObjCode("jal write");
+        code5 = getObjCode("jal write");
         ObjCodeP code6 = getMIPScode(MIPS_LW,"$ra","0",NULL);
         ObjCodeP code7 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
 
@@ -408,7 +516,7 @@ void *translateInterCode(CodeNodeP codeNode)
         
         code3 = getMIPScode(MIPS_JAL, opn1,NULL,NULL);
         code4 = getMIPScode(MIPS_LW,"$ra","0",NULL);
-        ObjCodeP code5 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
+        code5 = getMIPScode(MIPS_POP,NULL,NULL,NULL);
         updateAllOffset(-4);
         tempCode = mergeObjCode(tempCode , code3);
         tempCode = mergeObjCode(tempCode , code4);
@@ -450,7 +558,10 @@ void *translateInterCode(CodeNodeP codeNode)
         }
         break;
     }
-
+    case OP_DEC:
+    {
+        break;
+    }
     case OP_ARG:
         break;
     case OP_PARAM:
@@ -483,6 +594,14 @@ ObjCodeP getMIPScode(enum MIPS32_OP op, char *param1, char *param2, char *param3
         strcat(code,"($sp)");
         break;
     }
+    case MIPS_LW_NORMAL:
+    {
+        strcpy(code,"lw ");
+        strcat(code,param1);
+        strcat(code,", ");
+        strcat(code,param2);
+        break;
+    }
     case MIPS_SW:
     {
         strcpy(code,"sw ");
@@ -490,6 +609,14 @@ ObjCodeP getMIPScode(enum MIPS32_OP op, char *param1, char *param2, char *param3
         strcat(code,", ");
         strcat(code,param2);
         strcat(code,"($sp)");
+        break;
+    }
+    case MIPS_SW_NORMAL:
+    {
+        strcpy(code,"sw ");
+        strcat(code,param1);
+        strcat(code,", ");
+        strcat(code,param2);
         break;
     }
     case MIPS_MOVE:
@@ -628,6 +755,9 @@ ObjCodeP getMIPScode(enum MIPS32_OP op, char *param1, char *param2, char *param3
         code = "addi $sp, $sp, 4";
         break;
     }
+    default:
+        printf("unrecognized code\n");
+        break;
     }
     return getObjCode(code);
 }

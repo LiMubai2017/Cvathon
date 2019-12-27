@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+enum VARIABLE_TYPE {NORMAL_VAIRABLE , ARRAY_VARIABLE};
 typedef struct OffsetContainer{
+    enum VARIABLE_TYPE type;
     int offset;
 } *OffsetPointer;
 
@@ -9,21 +11,24 @@ int _getVoffset(char *name);
 int _getToffset(char *name);
 //extern void log(char*);
 int getStackSize();
+void updateAllOffset(int delta);
 
 OffsetPointer *v = NULL;
 OffsetPointer *t = NULL;
 
 extern int inMain;
+// int inMain = 0;
 
 int v_num=0;
 int t_num=0;
+int all_array_size=0;
 
 int getStackSize()
 {
-    return (v_num+t_num+1)*4;
+    return (v_num+t_num+1)*4 + all_array_size;
 }
 
-void init(int v_number, int t_number)
+void init(int v_number, int t_number, int array_num, char **array_v, int *array_size)
 {
     v_num = v_number;
     t_num = t_number;
@@ -36,7 +41,23 @@ void init(int v_number, int t_number)
         t[i] = NULL;
     }
 
+    //数组
+    for(int i = 0; i < array_num; i++) {
+        int num = 0;
+        int len = strlen(array_v[i]);
+        for(int j = 1 ;j < len; j++) {
+            num = num * 10 + (array_v[i][j] - '0');
+        }
+        updateAllOffset(array_size[i]);
+        v[num] = (OffsetPointer)malloc(sizeof(struct OffsetContainer));
+        v[num]->offset=0;
+
+        all_array_size += array_size[i];
+    }
+
     for(int i = 1; i <= v_num; i++) {
+        if(v[i] != NULL) continue;
+
         updateAllOffset(4);
         v[i] = (OffsetPointer)malloc(sizeof(struct OffsetContainer));
         v[i]->offset=0;
@@ -183,20 +204,17 @@ int _getToffset(char *name)
 
 // int main()
 // {
-//     init(4,4);
-//     printf("%d\n",isInStack("t4"));
-//     pushToStack("t4");
-//     if(isInStack("t4")) {
-//         printf("found temp offset:%d\n",getOffset("t4"));
-//     }
-//     pushToStack("v4");
-//     printf("t4 offset:%d\n",getOffset("t4"));
-//     if(isInStack("v4")) {
-//         printf("found variable offset:%d\n",getOffset("v4"));
-//     }
-//     pushToStack("v2");
-//     printf("t4 offset:%d\n",getOffset("t4"));
-//     printf("v4 offset:%d\n",getOffset("v4"));
+//     char *arrays[3] = {"v1", "v2","v3"};
+//     int size[3] = {40,16,80};
+//     init(4,4,3,arrays,size);
+//     printf("%d\n", getOffset("v1"));
+//     printf("%d\n", getOffset("v2"));
+//     printf("%d\n", getOffset("v3"));
+//     printf("%d\n", getOffset("v4"));
+//     printf("%d\n", getOffset("t1"));
+//     printf("%d\n", getOffset("t2"));
+//     printf("%d\n", getOffset("t3"));
+//     printf("%d\n", getOffset("t4"));
 // }
 
 

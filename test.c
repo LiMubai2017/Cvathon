@@ -11,13 +11,26 @@ int test(int a)
 
 int main()
 {
-    int a,b
-    a=5
-    b=10
-    a=test(b)
-    write(a)
-    write(b++)
-    write(b)
-    write(++b)
+    int a[10],i,b,c
+    //求数组中最大值
+    for(i = 0; i < 10; i++)
+    {
+        a[i]=i
+    }
+    b=a[5]
+    for(i=0; i<10; i++)
+    {
+        if(a[i] > b)
+        {
+            b=a[i]
+        }
+    }
+    write(b)  
+    
+    //测试函数调用
+    c = test(b) 
+    write(c)
     return 0
 }
+
+
